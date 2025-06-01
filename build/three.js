@@ -453,6 +453,42 @@
 		}
 	};
 
+	function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+		try {
+			var info = gen[key](arg);
+			var value = info.value;
+		} catch (error) {
+			reject(error);
+			return;
+		}
+
+		if (info.done) {
+			resolve(value);
+		} else {
+			Promise.resolve(value).then(_next, _throw);
+		}
+	}
+
+	function _asyncToGenerator(fn) {
+		return function () {
+			var self = this,
+					args = arguments;
+			return new Promise(function (resolve, reject) {
+				var gen = fn.apply(self, args);
+
+				function _next(value) {
+					asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+				}
+
+				function _throw(err) {
+					asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+				}
+
+				_next(undefined);
+			});
+		};
+	}
+
 	function _defineProperties(target, props) {
 		for (var i = 0; i < props.length; i++) {
 			var descriptor = props[i];
@@ -481,6 +517,48 @@
 		}
 
 		return self;
+	}
+
+	function _unsupportedIterableToArray(o, minLen) {
+		if (!o) return;
+		if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+		var n = Object.prototype.toString.call(o).slice(8, -1);
+		if (n === "Object" && o.constructor) n = o.constructor.name;
+		if (n === "Map" || n === "Set") return Array.from(o);
+		if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+	}
+
+	function _arrayLikeToArray(arr, len) {
+		if (len == null || len > arr.length) len = arr.length;
+
+		for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+		return arr2;
+	}
+
+	function _createForOfIteratorHelperLoose(o, allowArrayLike) {
+		var it;
+
+		if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
+			if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+				if (it) o = it;
+				var i = 0;
+				return function () {
+					if (i >= o.length) return {
+						done: true
+					};
+					return {
+						done: false,
+						value: o[i++]
+					};
+				};
+			}
+
+			throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+		}
+
+		it = o[Symbol.iterator]();
+		return it.next.bind(it);
 	}
 
 	var Vector2 = /*#__PURE__*/function () {
@@ -16461,60 +16539,123 @@
 		isGroup: true
 	});
 
-	function WebXRController() {
-		this._targetRay = null;
-		this._grip = null;
-		this._hand = null;
-	}
+	var _moveEvent = {
+		type: 'move'
+	};
+	/**
+	 * Class for representing a XR controller with its
+	 * different coordinate systems.
+	 *
+	 * @private
+	 */
 
-	Object.assign(WebXRController.prototype, {
-		constructor: WebXRController,
-		getHandSpace: function getHandSpace() {
+	var WebXRController = /*#__PURE__*/function () {
+		/**
+		 * Constructs a new XR controller.
+		 */
+		function WebXRController() {
+			/**
+			 * A group representing the target ray space
+			 * of the XR controller.
+			 *
+			 * @private
+			 * @type {?Group}
+			 * @default null
+			 */
+			this._targetRay = null;
+			/**
+			 * A group representing the grip space
+			 * of the XR controller.
+			 *
+			 * @private
+			 * @type {?Group}
+			 * @default null
+			 */
+
+			this._grip = null;
+			/**
+			 * A group representing the hand space
+			 * of the XR controller.
+			 *
+			 * @private
+			 * @type {?Group}
+			 * @default null
+			 */
+
+			this._hand = null;
+		}
+		/**
+		 * Returns a group representing the hand space of the XR controller.
+		 *
+		 * @return {Group} A group representing the hand space of the XR controller.
+		 */
+
+
+		var _proto = WebXRController.prototype;
+
+		_proto.getHandSpace = function getHandSpace() {
 			if (this._hand === null) {
 				this._hand = new Group();
 				this._hand.matrixAutoUpdate = false;
 				this._hand.visible = false;
-				this._hand.joints = [];
+				this._hand.joints = {};
 				this._hand.inputState = {
 					pinching: false
 				};
-
-				if (window.XRHand) {
-					for (var i = 0; i <= window.XRHand.LITTLE_PHALANX_TIP; i++) {
-						// The transform of this joint will be updated with the joint pose on each frame
-						var joint = new Group();
-						joint.matrixAutoUpdate = false;
-						joint.visible = false;
-
-						this._hand.joints.push(joint); // ??
-
-
-						this._hand.add(joint);
-					}
-				}
 			}
 
 			return this._hand;
-		},
-		getTargetRaySpace: function getTargetRaySpace() {
+		}
+		/**
+		 * Returns a group representing the target ray space of the XR controller.
+		 *
+		 * @return {Group} A group representing the target ray space of the XR controller.
+		 */
+		;
+
+		_proto.getTargetRaySpace = function getTargetRaySpace() {
 			if (this._targetRay === null) {
 				this._targetRay = new Group();
 				this._targetRay.matrixAutoUpdate = false;
 				this._targetRay.visible = false;
+				this._targetRay.hasLinearVelocity = false;
+				this._targetRay.linearVelocity = new Vector3();
+				this._targetRay.hasAngularVelocity = false;
+				this._targetRay.angularVelocity = new Vector3();
 			}
 
 			return this._targetRay;
-		},
-		getGripSpace: function getGripSpace() {
+		}
+		/**
+		 * Returns a group representing the grip space of the XR controller.
+		 *
+		 * @return {Group} A group representing the grip space of the XR controller.
+		 */
+		;
+
+		_proto.getGripSpace = function getGripSpace() {
 			if (this._grip === null) {
 				this._grip = new Group();
 				this._grip.matrixAutoUpdate = false;
 				this._grip.visible = false;
+				this._grip.hasLinearVelocity = false;
+				this._grip.linearVelocity = new Vector3();
+				this._grip.hasAngularVelocity = false;
+				this._grip.angularVelocity = new Vector3();
 			}
 
 			return this._grip;
-		},
-		dispatchEvent: function dispatchEvent(event) {
+		}
+		/**
+		 * Dispatches the given event to the groups representing
+		 * the different coordinate spaces of the XR controller.
+		 *
+		 * @param {Object} event - The event to dispatch.
+		 * @return {WebXRController} A reference to this instance.
+		 */
+		;
+
+		_proto.dispatchEvent = function dispatchEvent(event) {
 			if (this._targetRay !== null) {
 				this._targetRay.dispatchEvent(event);
 			}
@@ -16528,8 +16669,44 @@
 			}
 
 			return this;
-		},
-		disconnect: function disconnect(inputSource) {
+		}
+		/**
+		 * Connects the controller with the given XR input source.
+		 *
+		 * @param {XRInputSource} inputSource - The input source.
+		 * @return {WebXRController} A reference to this instance.
+		 */
+		;
+
+		_proto.connect = function connect(inputSource) {
+			if (inputSource && inputSource.hand) {
+				var hand = this._hand;
+
+				if (hand) {
+					for (var _iterator = _createForOfIteratorHelperLoose(inputSource.hand.values()), _step; !(_step = _iterator()).done;) {
+						var inputjoint = _step.value;
+
+						// Initialize hand with joints when connected
+						this._getHandJoint(hand, inputjoint);
+					}
+				}
+			}
+
+			this.dispatchEvent({
+				type: 'connected',
+				data: inputSource
+			});
+			return this;
+		}
+		/**
+		 * Disconnects the controller from the given XR input source.
+		 *
+		 * @param {XRInputSource} inputSource - The input source.
+		 * @return {WebXRController} A reference to this instance.
+		 */
+		;
+
+		_proto.disconnect = function disconnect(inputSource) {
 			this.dispatchEvent({
 				type: 'disconnected',
 				data: inputSource
@@ -16548,8 +16725,20 @@
 			}
 
 			return this;
-		},
-		update: function update(inputSource, frame, referenceSpace) {
+		}
+		/**
+		 * Updates the controller with the given input source, XR frame and reference space.
+		 * This updates the transformations of the groups that represent the different
+		 * coordinate systems of the controller.
+		 *
+		 * @param {XRInputSource} inputSource - The input source.
+		 * @param {XRFrame} frame - The XR frame.
+		 * @param {XRReferenceSpace} referenceSpace - The reference space.
+		 * @return {WebXRController} A reference to this instance.
+		 */
+		;
+
+		_proto.update = function update(inputSource, frame, referenceSpace) {
 			var inputPose = null;
 			var gripPose = null;
 			var handPose = null;
@@ -16561,61 +16750,99 @@
 				if (hand && inputSource.hand) {
 					handPose = true;
 
-					for (var i = 0; i <= window.XRHand.LITTLE_PHALANX_TIP; i++) {
-						if (inputSource.hand[i]) {
-							// Update the joints groups with the XRJoint poses
-							var jointPose = frame.getJointPose(inputSource.hand[i], referenceSpace);
-							var joint = hand.joints[i];
+					for (var _iterator2 = _createForOfIteratorHelperLoose(inputSource.hand.values()), _step2; !(_step2 = _iterator2()).done;) {
+						var inputjoint = _step2.value;
+						// Update the joints groups with the XRJoint poses
+						var jointPose = frame.getJointPose(inputjoint, referenceSpace); // The transform of this joint will be updated with the joint pose on each frame
 
-							if (jointPose !== null) {
-								joint.matrix.fromArray(jointPose.transform.matrix);
-								joint.matrix.decompose(joint.position, joint.rotation, joint.scale);
-								joint.jointRadius = jointPose.radius;
-							}
+						var joint = this._getHandJoint(hand, inputjoint);
 
-							joint.visible = jointPose !== null; // Custom events
-							// Check pinch
-
-							var indexTip = hand.joints[window.XRHand.INDEX_PHALANX_TIP];
-							var thumbTip = hand.joints[window.XRHand.THUMB_PHALANX_TIP];
-							var distance = indexTip.position.distanceTo(thumbTip.position);
-							var distanceToPinch = 0.02;
-							var threshold = 0.005;
-
-							if (hand.inputState.pinching && distance > distanceToPinch + threshold) {
-								hand.inputState.pinching = false;
-								this.dispatchEvent({
-									type: "pinchend",
-									handedness: inputSource.handedness,
-									target: this
-								});
-							} else if (!hand.inputState.pinching && distance <= distanceToPinch - threshold) {
-								hand.inputState.pinching = true;
-								this.dispatchEvent({
-									type: "pinchstart",
-									handedness: inputSource.handedness,
-									target: this
-								});
-							}
+						if (jointPose !== null) {
+							joint.matrix.fromArray(jointPose.transform.matrix);
+							joint.matrix.decompose(joint.position, joint.rotation, joint.scale);
+							joint.matrixWorldNeedsUpdate = true;
+							joint.jointRadius = jointPose.radius;
 						}
+
+						joint.visible = jointPose !== null;
+					} // Custom events
+					// Check pinchz
+
+
+					var indexTip = hand.joints['index-finger-tip'];
+					var thumbTip = hand.joints['thumb-tip'];
+					var distance = indexTip.position.distanceTo(thumbTip.position);
+					var distanceToPinch = 0.02;
+					var threshold = 0.005;
+
+					if (hand.inputState.pinching && distance > distanceToPinch + threshold) {
+						hand.inputState.pinching = false;
+						this.dispatchEvent({
+							type: 'pinchend',
+							handedness: inputSource.handedness,
+							target: this
+						});
+					} else if (!hand.inputState.pinching && distance <= distanceToPinch - threshold) {
+						hand.inputState.pinching = true;
+						this.dispatchEvent({
+							type: 'pinchstart',
+							handedness: inputSource.handedness,
+							target: this
+						});
 					}
 				} else {
-					if (targetRay !== null) {
-						inputPose = frame.getPose(inputSource.targetRaySpace, referenceSpace);
-
-						if (inputPose !== null) {
-							targetRay.matrix.fromArray(inputPose.transform.matrix);
-							targetRay.matrix.decompose(targetRay.position, targetRay.rotation, targetRay.scale);
-						}
-					}
-
 					if (grip !== null && inputSource.gripSpace) {
 						gripPose = frame.getPose(inputSource.gripSpace, referenceSpace);
 
 						if (gripPose !== null) {
 							grip.matrix.fromArray(gripPose.transform.matrix);
 							grip.matrix.decompose(grip.position, grip.rotation, grip.scale);
+							grip.matrixWorldNeedsUpdate = true;
+
+							if (gripPose.linearVelocity) {
+								grip.hasLinearVelocity = true;
+								grip.linearVelocity.copy(gripPose.linearVelocity);
+							} else {
+								grip.hasLinearVelocity = false;
+							}
+
+							if (gripPose.angularVelocity) {
+								grip.hasAngularVelocity = true;
+								grip.angularVelocity.copy(gripPose.angularVelocity);
+							} else {
+								grip.hasAngularVelocity = false;
+							}
 						}
+					}
+				}
+
+				if (targetRay !== null) {
+					inputPose = frame.getPose(inputSource.targetRaySpace, referenceSpace); // Some runtimes (namely Vive Cosmos with Vive OpenXR Runtime) have only grip space and ray space is equal to it
+
+					if (inputPose === null && gripPose !== null) {
+						inputPose = gripPose;
+					}
+
+					if (inputPose !== null) {
+						targetRay.matrix.fromArray(inputPose.transform.matrix);
+						targetRay.matrix.decompose(targetRay.position, targetRay.rotation, targetRay.scale);
+						targetRay.matrixWorldNeedsUpdate = true;
+
+						if (inputPose.linearVelocity) {
+							targetRay.hasLinearVelocity = true;
+							targetRay.linearVelocity.copy(inputPose.linearVelocity);
+						} else {
+							targetRay.hasLinearVelocity = false;
+						}
+
+						if (inputPose.angularVelocity) {
+							targetRay.hasAngularVelocity = true;
+							targetRay.angularVelocity.copy(inputPose.angularVelocity);
+						} else {
+							targetRay.hasAngularVelocity = false;
+						}
+
+						this.dispatchEvent(_moveEvent);
 					}
 				}
 			}
@@ -16634,17 +16861,1143 @@
 
 			return this;
 		}
+		/**
+		 * Returns a group representing the hand joint for the given input joint.
+		 *
+		 * @private
+		 * @param {Group} hand - The group representing the hand space.
+		 * @param {XRJointSpace} inputjoint - The hand joint data.
+		 * @return {Group} A group representing the hand joint for the given input joint.
+		 */
+		;
+
+		_proto._getHandJoint = function _getHandJoint(hand, inputjoint) {
+			if (hand.joints[inputjoint.jointName] === undefined) {
+				var joint = new Group();
+				joint.matrixAutoUpdate = false;
+				joint.visible = false;
+				hand.joints[inputjoint.jointName] = joint;
+				hand.add(joint);
+			}
+
+			return hand.joints[inputjoint.jointName];
+		};
+
+		return WebXRController;
+	}();
+
+	var _geometryId = 0; // Geometry uses even numbers as Id
+
+	var _m1$3 = new Matrix4();
+
+	var _obj$1 = new Object3D();
+
+	var _offset$1 = new Vector3();
+
+	function Geometry() {
+		Object.defineProperty(this, 'id', {
+			value: _geometryId += 2
+		});
+		this.uuid = MathUtils.generateUUID();
+		this.name = '';
+		this.type = 'Geometry';
+		this.vertices = [];
+		this.colors = [];
+		this.faces = [];
+		this.faceVertexUvs = [[]];
+		this.morphTargets = [];
+		this.morphNormals = [];
+		this.skinWeights = [];
+		this.skinIndices = [];
+		this.lineDistances = [];
+		this.boundingBox = null;
+		this.boundingSphere = null; // update flags
+
+		this.elementsNeedUpdate = false;
+		this.verticesNeedUpdate = false;
+		this.uvsNeedUpdate = false;
+		this.normalsNeedUpdate = false;
+		this.colorsNeedUpdate = false;
+		this.lineDistancesNeedUpdate = false;
+		this.groupsNeedUpdate = false;
+	}
+
+	Geometry.prototype = Object.assign(Object.create(EventDispatcher.prototype), {
+		constructor: Geometry,
+		isGeometry: true,
+		applyMatrix4: function applyMatrix4(matrix) {
+			var normalMatrix = new Matrix3().getNormalMatrix(matrix);
+
+			for (var i = 0, il = this.vertices.length; i < il; i++) {
+				var vertex = this.vertices[i];
+				vertex.applyMatrix4(matrix);
+			}
+
+			for (var _i = 0, _il = this.faces.length; _i < _il; _i++) {
+				var face = this.faces[_i];
+				face.normal.applyMatrix3(normalMatrix).normalize();
+
+				for (var j = 0, jl = face.vertexNormals.length; j < jl; j++) {
+					face.vertexNormals[j].applyMatrix3(normalMatrix).normalize();
+				}
+			}
+
+			if (this.boundingBox !== null) {
+				this.computeBoundingBox();
+			}
+
+			if (this.boundingSphere !== null) {
+				this.computeBoundingSphere();
+			}
+
+			this.verticesNeedUpdate = true;
+			this.normalsNeedUpdate = true;
+			return this;
+		},
+		rotateX: function rotateX(angle) {
+			// rotate geometry around world x-axis
+			_m1$3.makeRotationX(angle);
+
+			this.applyMatrix4(_m1$3);
+			return this;
+		},
+		rotateY: function rotateY(angle) {
+			// rotate geometry around world y-axis
+			_m1$3.makeRotationY(angle);
+
+			this.applyMatrix4(_m1$3);
+			return this;
+		},
+		rotateZ: function rotateZ(angle) {
+			// rotate geometry around world z-axis
+			_m1$3.makeRotationZ(angle);
+
+			this.applyMatrix4(_m1$3);
+			return this;
+		},
+		translate: function translate(x, y, z) {
+			// translate geometry
+			_m1$3.makeTranslation(x, y, z);
+
+			this.applyMatrix4(_m1$3);
+			return this;
+		},
+		scale: function scale(x, y, z) {
+			// scale geometry
+			_m1$3.makeScale(x, y, z);
+
+			this.applyMatrix4(_m1$3);
+			return this;
+		},
+		lookAt: function lookAt(vector) {
+			_obj$1.lookAt(vector);
+
+			_obj$1.updateMatrix();
+
+			this.applyMatrix4(_obj$1.matrix);
+			return this;
+		},
+		fromBufferGeometry: function fromBufferGeometry(geometry) {
+			var scope = this;
+			var index = geometry.index !== null ? geometry.index : undefined;
+			var attributes = geometry.attributes;
+
+			if (attributes.position === undefined) {
+				console.error('THREE.Geometry.fromBufferGeometry(): Position attribute required for conversion.');
+				return this;
+			}
+
+			var position = attributes.position;
+			var normal = attributes.normal;
+			var color = attributes.color;
+			var uv = attributes.uv;
+			var uv2 = attributes.uv2;
+			if (uv2 !== undefined) this.faceVertexUvs[1] = [];
+
+			for (var i = 0; i < position.count; i++) {
+				scope.vertices.push(new Vector3().fromBufferAttribute(position, i));
+
+				if (color !== undefined) {
+					scope.colors.push(new Color().fromBufferAttribute(color, i));
+				}
+			}
+
+			function addFace(a, b, c, materialIndex) {
+				var vertexColors = color === undefined ? [] : [scope.colors[a].clone(), scope.colors[b].clone(), scope.colors[c].clone()];
+				var vertexNormals = normal === undefined ? [] : [new Vector3().fromBufferAttribute(normal, a), new Vector3().fromBufferAttribute(normal, b), new Vector3().fromBufferAttribute(normal, c)];
+				var face = new Face3(a, b, c, vertexNormals, vertexColors, materialIndex);
+				scope.faces.push(face);
+
+				if (uv !== undefined) {
+					scope.faceVertexUvs[0].push([new Vector2().fromBufferAttribute(uv, a), new Vector2().fromBufferAttribute(uv, b), new Vector2().fromBufferAttribute(uv, c)]);
+				}
+
+				if (uv2 !== undefined) {
+					scope.faceVertexUvs[1].push([new Vector2().fromBufferAttribute(uv2, a), new Vector2().fromBufferAttribute(uv2, b), new Vector2().fromBufferAttribute(uv2, c)]);
+				}
+			}
+
+			var groups = geometry.groups;
+
+			if (groups.length > 0) {
+				for (var _i2 = 0; _i2 < groups.length; _i2++) {
+					var group = groups[_i2];
+					var start = group.start;
+					var count = group.count;
+
+					for (var j = start, jl = start + count; j < jl; j += 3) {
+						if (index !== undefined) {
+							addFace(index.getX(j), index.getX(j + 1), index.getX(j + 2), group.materialIndex);
+						} else {
+							addFace(j, j + 1, j + 2, group.materialIndex);
+						}
+					}
+				}
+			} else {
+				if (index !== undefined) {
+					for (var _i3 = 0; _i3 < index.count; _i3 += 3) {
+						addFace(index.getX(_i3), index.getX(_i3 + 1), index.getX(_i3 + 2));
+					}
+				} else {
+					for (var _i4 = 0; _i4 < position.count; _i4 += 3) {
+						addFace(_i4, _i4 + 1, _i4 + 2);
+					}
+				}
+			}
+
+			this.computeFaceNormals();
+
+			if (geometry.boundingBox !== null) {
+				this.boundingBox = geometry.boundingBox.clone();
+			}
+
+			if (geometry.boundingSphere !== null) {
+				this.boundingSphere = geometry.boundingSphere.clone();
+			}
+
+			return this;
+		},
+		center: function center() {
+			this.computeBoundingBox();
+			this.boundingBox.getCenter(_offset$1).negate();
+			this.translate(_offset$1.x, _offset$1.y, _offset$1.z);
+			return this;
+		},
+		normalize: function normalize() {
+			this.computeBoundingSphere();
+			var center = this.boundingSphere.center;
+			var radius = this.boundingSphere.radius;
+			var s = radius === 0 ? 1 : 1.0 / radius;
+			var matrix = new Matrix4();
+			matrix.set(s, 0, 0, -s * center.x, 0, s, 0, -s * center.y, 0, 0, s, -s * center.z, 0, 0, 0, 1);
+			this.applyMatrix4(matrix);
+			return this;
+		},
+		computeFaceNormals: function computeFaceNormals() {
+			var cb = new Vector3(),
+					ab = new Vector3();
+
+			for (var f = 0, fl = this.faces.length; f < fl; f++) {
+				var face = this.faces[f];
+				var vA = this.vertices[face.a];
+				var vB = this.vertices[face.b];
+				var vC = this.vertices[face.c];
+				cb.subVectors(vC, vB);
+				ab.subVectors(vA, vB);
+				cb.cross(ab);
+				cb.normalize();
+				face.normal.copy(cb);
+			}
+		},
+		computeVertexNormals: function computeVertexNormals(areaWeighted) {
+			if (areaWeighted === void 0) {
+				areaWeighted = true;
+			}
+
+			var vertices = new Array(this.vertices.length);
+
+			for (var v = 0, vl = this.vertices.length; v < vl; v++) {
+				vertices[v] = new Vector3();
+			}
+
+			if (areaWeighted) {
+				// vertex normals weighted by triangle areas
+				// http://www.iquilezles.org/www/articles/normals/normals.htm
+				var cb = new Vector3(),
+						ab = new Vector3();
+
+				for (var f = 0, fl = this.faces.length; f < fl; f++) {
+					var face = this.faces[f];
+					var vA = this.vertices[face.a];
+					var vB = this.vertices[face.b];
+					var vC = this.vertices[face.c];
+					cb.subVectors(vC, vB);
+					ab.subVectors(vA, vB);
+					cb.cross(ab);
+					vertices[face.a].add(cb);
+					vertices[face.b].add(cb);
+					vertices[face.c].add(cb);
+				}
+			} else {
+				this.computeFaceNormals();
+
+				for (var _f = 0, _fl = this.faces.length; _f < _fl; _f++) {
+					var _face = this.faces[_f];
+
+					vertices[_face.a].add(_face.normal);
+
+					vertices[_face.b].add(_face.normal);
+
+					vertices[_face.c].add(_face.normal);
+				}
+			}
+
+			for (var _v = 0, _vl = this.vertices.length; _v < _vl; _v++) {
+				vertices[_v].normalize();
+			}
+
+			for (var _f2 = 0, _fl2 = this.faces.length; _f2 < _fl2; _f2++) {
+				var _face2 = this.faces[_f2];
+				var vertexNormals = _face2.vertexNormals;
+
+				if (vertexNormals.length === 3) {
+					vertexNormals[0].copy(vertices[_face2.a]);
+					vertexNormals[1].copy(vertices[_face2.b]);
+					vertexNormals[2].copy(vertices[_face2.c]);
+				} else {
+					vertexNormals[0] = vertices[_face2.a].clone();
+					vertexNormals[1] = vertices[_face2.b].clone();
+					vertexNormals[2] = vertices[_face2.c].clone();
+				}
+			}
+
+			if (this.faces.length > 0) {
+				this.normalsNeedUpdate = true;
+			}
+		},
+		computeFlatVertexNormals: function computeFlatVertexNormals() {
+			this.computeFaceNormals();
+
+			for (var f = 0, fl = this.faces.length; f < fl; f++) {
+				var face = this.faces[f];
+				var vertexNormals = face.vertexNormals;
+
+				if (vertexNormals.length === 3) {
+					vertexNormals[0].copy(face.normal);
+					vertexNormals[1].copy(face.normal);
+					vertexNormals[2].copy(face.normal);
+				} else {
+					vertexNormals[0] = face.normal.clone();
+					vertexNormals[1] = face.normal.clone();
+					vertexNormals[2] = face.normal.clone();
+				}
+			}
+
+			if (this.faces.length > 0) {
+				this.normalsNeedUpdate = true;
+			}
+		},
+		computeMorphNormals: function computeMorphNormals() {
+			// save original normals
+			// - create temp variables on first access
+			//	 otherwise just copy (for faster repeated calls)
+			for (var f = 0, fl = this.faces.length; f < fl; f++) {
+				var face = this.faces[f];
+
+				if (!face.__originalFaceNormal) {
+					face.__originalFaceNormal = face.normal.clone();
+				} else {
+					face.__originalFaceNormal.copy(face.normal);
+				}
+
+				if (!face.__originalVertexNormals) face.__originalVertexNormals = [];
+
+				for (var i = 0, il = face.vertexNormals.length; i < il; i++) {
+					if (!face.__originalVertexNormals[i]) {
+						face.__originalVertexNormals[i] = face.vertexNormals[i].clone();
+					} else {
+						face.__originalVertexNormals[i].copy(face.vertexNormals[i]);
+					}
+				}
+			} // use temp geometry to compute face and vertex normals for each morph
+
+
+			var tmpGeo = new Geometry();
+			tmpGeo.faces = this.faces;
+
+			for (var _i5 = 0, _il2 = this.morphTargets.length; _i5 < _il2; _i5++) {
+				// create on first access
+				if (!this.morphNormals[_i5]) {
+					this.morphNormals[_i5] = {};
+					this.morphNormals[_i5].faceNormals = [];
+					this.morphNormals[_i5].vertexNormals = [];
+					var dstNormalsFace = this.morphNormals[_i5].faceNormals;
+					var dstNormalsVertex = this.morphNormals[_i5].vertexNormals;
+
+					for (var _f3 = 0, _fl3 = this.faces.length; _f3 < _fl3; _f3++) {
+						var faceNormal = new Vector3();
+						var vertexNormals = {
+							a: new Vector3(),
+							b: new Vector3(),
+							c: new Vector3()
+						};
+						dstNormalsFace.push(faceNormal);
+						dstNormalsVertex.push(vertexNormals);
+					}
+				}
+
+				var morphNormals = this.morphNormals[_i5]; // set vertices to morph target
+
+				tmpGeo.vertices = this.morphTargets[_i5].vertices; // compute morph normals
+
+				tmpGeo.computeFaceNormals();
+				tmpGeo.computeVertexNormals(); // store morph normals
+
+				for (var _f4 = 0, _fl4 = this.faces.length; _f4 < _fl4; _f4++) {
+					var _face3 = this.faces[_f4];
+					var _faceNormal = morphNormals.faceNormals[_f4];
+					var _vertexNormals = morphNormals.vertexNormals[_f4];
+
+					_faceNormal.copy(_face3.normal);
+
+					_vertexNormals.a.copy(_face3.vertexNormals[0]);
+
+					_vertexNormals.b.copy(_face3.vertexNormals[1]);
+
+					_vertexNormals.c.copy(_face3.vertexNormals[2]);
+				}
+			} // restore original normals
+
+
+			for (var _f5 = 0, _fl5 = this.faces.length; _f5 < _fl5; _f5++) {
+				var _face4 = this.faces[_f5];
+				_face4.normal = _face4.__originalFaceNormal;
+				_face4.vertexNormals = _face4.__originalVertexNormals;
+			}
+		},
+		computeBoundingBox: function computeBoundingBox() {
+			if (this.boundingBox === null) {
+				this.boundingBox = new Box3();
+			}
+
+			this.boundingBox.setFromPoints(this.vertices);
+		},
+		computeBoundingSphere: function computeBoundingSphere() {
+			if (this.boundingSphere === null) {
+				this.boundingSphere = new Sphere();
+			}
+
+			this.boundingSphere.setFromPoints(this.vertices);
+		},
+		merge: function merge(geometry, matrix, materialIndexOffset) {
+			if (materialIndexOffset === void 0) {
+				materialIndexOffset = 0;
+			}
+
+			if (!(geometry && geometry.isGeometry)) {
+				console.error('THREE.Geometry.merge(): geometry not an instance of THREE.Geometry.', geometry);
+				return;
+			}
+
+			var normalMatrix;
+			var vertexOffset = this.vertices.length,
+					vertices1 = this.vertices,
+					vertices2 = geometry.vertices,
+					faces1 = this.faces,
+					faces2 = geometry.faces,
+					colors1 = this.colors,
+					colors2 = geometry.colors;
+
+			if (matrix !== undefined) {
+				normalMatrix = new Matrix3().getNormalMatrix(matrix);
+			} // vertices
+
+
+			for (var i = 0, il = vertices2.length; i < il; i++) {
+				var vertex = vertices2[i];
+				var vertexCopy = vertex.clone();
+				if (matrix !== undefined) vertexCopy.applyMatrix4(matrix);
+				vertices1.push(vertexCopy);
+			} // colors
+
+
+			for (var _i6 = 0, _il3 = colors2.length; _i6 < _il3; _i6++) {
+				colors1.push(colors2[_i6].clone());
+			} // faces
+
+
+			for (var _i7 = 0, _il4 = faces2.length; _i7 < _il4; _i7++) {
+				var face = faces2[_i7];
+				var normal = void 0,
+						color = void 0;
+				var faceVertexNormals = face.vertexNormals,
+						faceVertexColors = face.vertexColors;
+				var faceCopy = new Face3(face.a + vertexOffset, face.b + vertexOffset, face.c + vertexOffset);
+				faceCopy.normal.copy(face.normal);
+
+				if (normalMatrix !== undefined) {
+					faceCopy.normal.applyMatrix3(normalMatrix).normalize();
+				}
+
+				for (var j = 0, jl = faceVertexNormals.length; j < jl; j++) {
+					normal = faceVertexNormals[j].clone();
+
+					if (normalMatrix !== undefined) {
+						normal.applyMatrix3(normalMatrix).normalize();
+					}
+
+					faceCopy.vertexNormals.push(normal);
+				}
+
+				faceCopy.color.copy(face.color);
+
+				for (var _j = 0, _jl = faceVertexColors.length; _j < _jl; _j++) {
+					color = faceVertexColors[_j];
+					faceCopy.vertexColors.push(color.clone());
+				}
+
+				faceCopy.materialIndex = face.materialIndex + materialIndexOffset;
+				faces1.push(faceCopy);
+			} // uvs
+
+
+			for (var _i8 = 0, _il5 = geometry.faceVertexUvs.length; _i8 < _il5; _i8++) {
+				var faceVertexUvs2 = geometry.faceVertexUvs[_i8];
+				if (this.faceVertexUvs[_i8] === undefined) this.faceVertexUvs[_i8] = [];
+
+				for (var _j2 = 0, _jl2 = faceVertexUvs2.length; _j2 < _jl2; _j2++) {
+					var uvs2 = faceVertexUvs2[_j2],
+							uvsCopy = [];
+
+					for (var k = 0, kl = uvs2.length; k < kl; k++) {
+						uvsCopy.push(uvs2[k].clone());
+					}
+
+					this.faceVertexUvs[_i8].push(uvsCopy);
+				}
+			}
+		},
+		mergeMesh: function mergeMesh(mesh) {
+			if (!(mesh && mesh.isMesh)) {
+				console.error('THREE.Geometry.mergeMesh(): mesh not an instance of THREE.Mesh.', mesh);
+				return;
+			}
+
+			if (mesh.matrixAutoUpdate) mesh.updateMatrix();
+			this.merge(mesh.geometry, mesh.matrix);
+		},
+
+		/*
+		 * Checks for duplicate vertices with hashmap.
+		 * Duplicated vertices are removed
+		 * and faces' vertices are updated.
+		 */
+		mergeVertices: function mergeVertices(precisionPoints) {
+			if (precisionPoints === void 0) {
+				precisionPoints = 4;
+			}
+
+			var verticesMap = {}; // Hashmap for looking up vertices by position coordinates (and making sure they are unique)
+
+			var unique = [],
+					changes = [];
+			var precision = Math.pow(10, precisionPoints);
+
+			for (var i = 0, il = this.vertices.length; i < il; i++) {
+				var v = this.vertices[i];
+				var key = Math.round(v.x * precision) + '_' + Math.round(v.y * precision) + '_' + Math.round(v.z * precision);
+
+				if (verticesMap[key] === undefined) {
+					verticesMap[key] = i;
+					unique.push(this.vertices[i]);
+					changes[i] = unique.length - 1;
+				} else {
+					//console.log('Duplicate vertex found. ', i, ' could be using ', verticesMap[key]);
+					changes[i] = changes[verticesMap[key]];
+				}
+			} // if faces are completely degenerate after merging vertices, we
+			// have to remove them from the geometry.
+
+
+			var faceIndicesToRemove = [];
+
+			for (var _i9 = 0, _il6 = this.faces.length; _i9 < _il6; _i9++) {
+				var face = this.faces[_i9];
+				face.a = changes[face.a];
+				face.b = changes[face.b];
+				face.c = changes[face.c];
+				var indices = [face.a, face.b, face.c]; // if any duplicate vertices are found in a Face3
+				// we have to remove the face as nothing can be saved
+
+				for (var n = 0; n < 3; n++) {
+					if (indices[n] === indices[(n + 1) % 3]) {
+						faceIndicesToRemove.push(_i9);
+						break;
+					}
+				}
+			}
+
+			for (var _i10 = faceIndicesToRemove.length - 1; _i10 >= 0; _i10--) {
+				var idx = faceIndicesToRemove[_i10];
+				this.faces.splice(idx, 1);
+
+				for (var j = 0, jl = this.faceVertexUvs.length; j < jl; j++) {
+					this.faceVertexUvs[j].splice(idx, 1);
+				}
+			} // Use unique set of vertices
+
+
+			var diff = this.vertices.length - unique.length;
+			this.vertices = unique;
+			return diff;
+		},
+		setFromPoints: function setFromPoints(points) {
+			this.vertices = [];
+
+			for (var i = 0, l = points.length; i < l; i++) {
+				var point = points[i];
+				this.vertices.push(new Vector3(point.x, point.y, point.z || 0));
+			}
+
+			return this;
+		},
+		sortFacesByMaterialIndex: function sortFacesByMaterialIndex() {
+			var faces = this.faces;
+			var length = faces.length; // tag faces
+
+			for (var i = 0; i < length; i++) {
+				faces[i]._id = i;
+			} // sort faces
+
+
+			function materialIndexSort(a, b) {
+				return a.materialIndex - b.materialIndex;
+			}
+
+			faces.sort(materialIndexSort); // sort uvs
+
+			var uvs1 = this.faceVertexUvs[0];
+			var uvs2 = this.faceVertexUvs[1];
+			var newUvs1, newUvs2;
+			if (uvs1 && uvs1.length === length) newUvs1 = [];
+			if (uvs2 && uvs2.length === length) newUvs2 = [];
+
+			for (var _i11 = 0; _i11 < length; _i11++) {
+				var id = faces[_i11]._id;
+				if (newUvs1) newUvs1.push(uvs1[id]);
+				if (newUvs2) newUvs2.push(uvs2[id]);
+			}
+
+			if (newUvs1) this.faceVertexUvs[0] = newUvs1;
+			if (newUvs2) this.faceVertexUvs[1] = newUvs2;
+		},
+		toJSON: function toJSON() {
+			var data = {
+				metadata: {
+					version: 4.5,
+					type: 'Geometry',
+					generator: 'Geometry.toJSON'
+				}
+			}; // standard Geometry serialization
+
+			data.uuid = this.uuid;
+			data.type = this.type;
+			if (this.name !== '') data.name = this.name;
+
+			if (this.parameters !== undefined) {
+				var parameters = this.parameters;
+
+				for (var key in parameters) {
+					if (parameters[key] !== undefined) data[key] = parameters[key];
+				}
+
+				return data;
+			}
+
+			var vertices = [];
+
+			for (var i = 0; i < this.vertices.length; i++) {
+				var vertex = this.vertices[i];
+				vertices.push(vertex.x, vertex.y, vertex.z);
+			}
+
+			var faces = [];
+			var normals = [];
+			var normalsHash = {};
+			var colors = [];
+			var colorsHash = {};
+			var uvs = [];
+			var uvsHash = {};
+
+			for (var _i12 = 0; _i12 < this.faces.length; _i12++) {
+				var face = this.faces[_i12];
+				var hasMaterial = true;
+				var hasFaceUv = false; // deprecated
+
+				var hasFaceVertexUv = this.faceVertexUvs[0][_i12] !== undefined;
+				var hasFaceNormal = face.normal.length() > 0;
+				var hasFaceVertexNormal = face.vertexNormals.length > 0;
+				var hasFaceColor = face.color.r !== 1 || face.color.g !== 1 || face.color.b !== 1;
+				var hasFaceVertexColor = face.vertexColors.length > 0;
+				var faceType = 0;
+				faceType = setBit(faceType, 0, 0); // isQuad
+
+				faceType = setBit(faceType, 1, hasMaterial);
+				faceType = setBit(faceType, 2, hasFaceUv);
+				faceType = setBit(faceType, 3, hasFaceVertexUv);
+				faceType = setBit(faceType, 4, hasFaceNormal);
+				faceType = setBit(faceType, 5, hasFaceVertexNormal);
+				faceType = setBit(faceType, 6, hasFaceColor);
+				faceType = setBit(faceType, 7, hasFaceVertexColor);
+				faces.push(faceType);
+				faces.push(face.a, face.b, face.c);
+				faces.push(face.materialIndex);
+
+				if (hasFaceVertexUv) {
+					var faceVertexUvs = this.faceVertexUvs[0][_i12];
+					faces.push(getUvIndex(faceVertexUvs[0]), getUvIndex(faceVertexUvs[1]), getUvIndex(faceVertexUvs[2]));
+				}
+
+				if (hasFaceNormal) {
+					faces.push(getNormalIndex(face.normal));
+				}
+
+				if (hasFaceVertexNormal) {
+					var vertexNormals = face.vertexNormals;
+					faces.push(getNormalIndex(vertexNormals[0]), getNormalIndex(vertexNormals[1]), getNormalIndex(vertexNormals[2]));
+				}
+
+				if (hasFaceColor) {
+					faces.push(getColorIndex(face.color));
+				}
+
+				if (hasFaceVertexColor) {
+					var vertexColors = face.vertexColors;
+					faces.push(getColorIndex(vertexColors[0]), getColorIndex(vertexColors[1]), getColorIndex(vertexColors[2]));
+				}
+			}
+
+			function setBit(value, position, enabled) {
+				return enabled ? value | 1 << position : value & ~(1 << position);
+			}
+
+			function getNormalIndex(normal) {
+				var hash = normal.x.toString() + normal.y.toString() + normal.z.toString();
+
+				if (normalsHash[hash] !== undefined) {
+					return normalsHash[hash];
+				}
+
+				normalsHash[hash] = normals.length / 3;
+				normals.push(normal.x, normal.y, normal.z);
+				return normalsHash[hash];
+			}
+
+			function getColorIndex(color) {
+				var hash = color.r.toString() + color.g.toString() + color.b.toString();
+
+				if (colorsHash[hash] !== undefined) {
+					return colorsHash[hash];
+				}
+
+				colorsHash[hash] = colors.length;
+				colors.push(color.getHex());
+				return colorsHash[hash];
+			}
+
+			function getUvIndex(uv) {
+				var hash = uv.x.toString() + uv.y.toString();
+
+				if (uvsHash[hash] !== undefined) {
+					return uvsHash[hash];
+				}
+
+				uvsHash[hash] = uvs.length / 2;
+				uvs.push(uv.x, uv.y);
+				return uvsHash[hash];
+			}
+
+			data.data = {};
+			data.data.vertices = vertices;
+			data.data.normals = normals;
+			if (colors.length > 0) data.data.colors = colors;
+			if (uvs.length > 0) data.data.uvs = [uvs]; // temporal backward compatibility
+
+			data.data.faces = faces;
+			return data;
+		},
+		clone: function clone() {
+			/*
+			 // Handle primitives
+				 const parameters = this.parameters;
+				 if ( parameters !== undefined ) {
+				 const values = [];
+				 for ( const key in parameters ) {
+				 values.push( parameters[ key ] );
+				 }
+				 const geometry = Object.create( this.constructor.prototype );
+			 this.constructor.apply( geometry, values );
+			 return geometry;
+				 }
+				 return new this.constructor().copy( this );
+			 */
+			return new Geometry().copy(this);
+		},
+		copy: function copy(source) {
+			// reset
+			this.vertices = [];
+			this.colors = [];
+			this.faces = [];
+			this.faceVertexUvs = [[]];
+			this.morphTargets = [];
+			this.morphNormals = [];
+			this.skinWeights = [];
+			this.skinIndices = [];
+			this.lineDistances = [];
+			this.boundingBox = null;
+			this.boundingSphere = null; // name
+
+			this.name = source.name; // vertices
+
+			var vertices = source.vertices;
+
+			for (var i = 0, il = vertices.length; i < il; i++) {
+				this.vertices.push(vertices[i].clone());
+			} // colors
+
+
+			var colors = source.colors;
+
+			for (var _i13 = 0, _il7 = colors.length; _i13 < _il7; _i13++) {
+				this.colors.push(colors[_i13].clone());
+			} // faces
+
+
+			var faces = source.faces;
+
+			for (var _i14 = 0, _il8 = faces.length; _i14 < _il8; _i14++) {
+				this.faces.push(faces[_i14].clone());
+			} // face vertex uvs
+
+
+			for (var _i15 = 0, _il9 = source.faceVertexUvs.length; _i15 < _il9; _i15++) {
+				var faceVertexUvs = source.faceVertexUvs[_i15];
+
+				if (this.faceVertexUvs[_i15] === undefined) {
+					this.faceVertexUvs[_i15] = [];
+				}
+
+				for (var j = 0, jl = faceVertexUvs.length; j < jl; j++) {
+					var uvs = faceVertexUvs[j],
+							uvsCopy = [];
+
+					for (var k = 0, kl = uvs.length; k < kl; k++) {
+						var uv = uvs[k];
+						uvsCopy.push(uv.clone());
+					}
+
+					this.faceVertexUvs[_i15].push(uvsCopy);
+				}
+			} // morph targets
+
+
+			var morphTargets = source.morphTargets;
+
+			for (var _i16 = 0, _il10 = morphTargets.length; _i16 < _il10; _i16++) {
+				var morphTarget = {};
+				morphTarget.name = morphTargets[_i16].name; // vertices
+
+				if (morphTargets[_i16].vertices !== undefined) {
+					morphTarget.vertices = [];
+
+					for (var _j3 = 0, _jl3 = morphTargets[_i16].vertices.length; _j3 < _jl3; _j3++) {
+						morphTarget.vertices.push(morphTargets[_i16].vertices[_j3].clone());
+					}
+				} // normals
+
+
+				if (morphTargets[_i16].normals !== undefined) {
+					morphTarget.normals = [];
+
+					for (var _j4 = 0, _jl4 = morphTargets[_i16].normals.length; _j4 < _jl4; _j4++) {
+						morphTarget.normals.push(morphTargets[_i16].normals[_j4].clone());
+					}
+				}
+
+				this.morphTargets.push(morphTarget);
+			} // morph normals
+
+
+			var morphNormals = source.morphNormals;
+
+			for (var _i17 = 0, _il11 = morphNormals.length; _i17 < _il11; _i17++) {
+				var morphNormal = {}; // vertex normals
+
+				if (morphNormals[_i17].vertexNormals !== undefined) {
+					morphNormal.vertexNormals = [];
+
+					for (var _j5 = 0, _jl5 = morphNormals[_i17].vertexNormals.length; _j5 < _jl5; _j5++) {
+						var srcVertexNormal = morphNormals[_i17].vertexNormals[_j5];
+						var destVertexNormal = {};
+						destVertexNormal.a = srcVertexNormal.a.clone();
+						destVertexNormal.b = srcVertexNormal.b.clone();
+						destVertexNormal.c = srcVertexNormal.c.clone();
+						morphNormal.vertexNormals.push(destVertexNormal);
+					}
+				} // face normals
+
+
+				if (morphNormals[_i17].faceNormals !== undefined) {
+					morphNormal.faceNormals = [];
+
+					for (var _j6 = 0, _jl6 = morphNormals[_i17].faceNormals.length; _j6 < _jl6; _j6++) {
+						morphNormal.faceNormals.push(morphNormals[_i17].faceNormals[_j6].clone());
+					}
+				}
+
+				this.morphNormals.push(morphNormal);
+			} // skin weights
+
+
+			var skinWeights = source.skinWeights;
+
+			for (var _i18 = 0, _il12 = skinWeights.length; _i18 < _il12; _i18++) {
+				this.skinWeights.push(skinWeights[_i18].clone());
+			} // skin indices
+
+
+			var skinIndices = source.skinIndices;
+
+			for (var _i19 = 0, _il13 = skinIndices.length; _i19 < _il13; _i19++) {
+				this.skinIndices.push(skinIndices[_i19].clone());
+			} // line distances
+
+
+			var lineDistances = source.lineDistances;
+
+			for (var _i20 = 0, _il14 = lineDistances.length; _i20 < _il14; _i20++) {
+				this.lineDistances.push(lineDistances[_i20]);
+			} // bounding box
+
+
+			var boundingBox = source.boundingBox;
+
+			if (boundingBox !== null) {
+				this.boundingBox = boundingBox.clone();
+			} // bounding sphere
+
+
+			var boundingSphere = source.boundingSphere;
+
+			if (boundingSphere !== null) {
+				this.boundingSphere = boundingSphere.clone();
+			} // update flags
+
+
+			this.elementsNeedUpdate = source.elementsNeedUpdate;
+			this.verticesNeedUpdate = source.verticesNeedUpdate;
+			this.uvsNeedUpdate = source.uvsNeedUpdate;
+			this.normalsNeedUpdate = source.normalsNeedUpdate;
+			this.colorsNeedUpdate = source.colorsNeedUpdate;
+			this.lineDistancesNeedUpdate = source.lineDistancesNeedUpdate;
+			this.groupsNeedUpdate = source.groupsNeedUpdate;
+			return this;
+		},
+		dispose: function dispose() {
+			this.dispatchEvent({
+				type: 'dispose'
+			});
+		}
 	});
+
+	var PlaneGeometry = /*#__PURE__*/function (_Geometry) {
+		_inheritsLoose(PlaneGeometry, _Geometry);
+
+		function PlaneGeometry(width, height, widthSegments, heightSegments) {
+			var _this;
+
+			_this = _Geometry.call(this) || this;
+			_this.type = 'PlaneGeometry';
+			_this.parameters = {
+				width: width,
+				height: height,
+				widthSegments: widthSegments,
+				heightSegments: heightSegments
+			};
+
+			_this.fromBufferGeometry(new PlaneBufferGeometry(width, height, widthSegments, heightSegments));
+
+			_this.mergeVertices();
+
+			return _this;
+		}
+
+		return PlaneGeometry;
+	}(Geometry);
+
+	var _occlusion_vertex = "\nvoid main() {\n\n\tgl_Position = vec4( position, 1.0 );\n\n}";
+	var _occlusion_fragment = "\nuniform sampler2DArray depthColor;\nuniform float depthWidth;\nuniform float depthHeight;\n\nvoid main() {\n\n\tvec2 coord = vec2( gl_FragCoord.x / depthWidth, gl_FragCoord.y / depthHeight );\n\n\tif ( coord.x >= 1.0 ) {\n\n\t\tgl_FragDepth = texture( depthColor, vec3( coord.x - 1.0, coord.y, 1 ) ).r;\n\n\t} else {\n\n\t\tgl_FragDepth = texture( depthColor, vec3( coord.x, coord.y, 0 ) ).r;\n\n\t}\n\n}";
+	/**
+	 * A XR module that manages the access to the Depth Sensing API.
+	 */
+
+	var WebXRDepthSensing = /*#__PURE__*/function () {
+		/**
+		 * Constructs a new depth sensing module.
+		 */
+		function WebXRDepthSensing() {
+			/**
+			 * A texture representing the depth of the user's environment.
+			 *
+			 * @type {?Texture}
+			 */
+			this.texture = null;
+			/**
+			 * A plane mesh for visualizing the depth texture.
+			 *
+			 * @type {?Mesh}
+			 */
+
+			this.mesh = null;
+			/**
+			 * The depth near value.
+			 *
+			 * @type {number}
+			 */
+
+			this.depthNear = 0;
+			/**
+			 * The depth near far.
+			 *
+			 * @type {number}
+			 */
+
+			this.depthFar = 0;
+		}
+		/**
+		 * Inits the depth sensing module
+		 *
+		 * @param {WebGLRenderer} renderer - The renderer.
+		 * @param {XRWebGLDepthInformation} depthData - The XR depth data.
+		 * @param {XRRenderState} renderState - The XR render state.
+		 */
+
+
+		var _proto = WebXRDepthSensing.prototype;
+
+		_proto.init = function init(renderer, depthData, renderState) {
+			if (this.texture === null) {
+				var texture = new Texture();
+				var texProps = renderer.properties.get(texture);
+				texProps.__webglTexture = depthData.texture;
+
+				if (depthData.depthNear !== renderState.depthNear || depthData.depthFar !== renderState.depthFar) {
+					this.depthNear = depthData.depthNear;
+					this.depthFar = depthData.depthFar;
+				}
+
+				this.texture = texture;
+			}
+		}
+		/**
+		 * Returns a plane mesh that visualizes the depth texture.
+		 *
+		 * @param {ArrayCamera} cameraXR - The XR camera.
+		 * @return {?Mesh} The plane mesh.
+		 */
+		;
+
+		_proto.getMesh = function getMesh(cameraXR) {
+			if (this.texture !== null) {
+				if (this.mesh === null) {
+					var viewport = cameraXR.cameras[0].viewport;
+					var material = new ShaderMaterial({
+						vertexShader: _occlusion_vertex,
+						fragmentShader: _occlusion_fragment,
+						uniforms: {
+							depthColor: {
+								value: this.texture
+							},
+							depthWidth: {
+								value: viewport.z
+							},
+							depthHeight: {
+								value: viewport.w
+							}
+						}
+					});
+					this.mesh = new Mesh(new PlaneGeometry(20, 20), material);
+				}
+			}
+
+			return this.mesh;
+		}
+		/**
+		 * Resets the module
+		 */
+		;
+
+		_proto.reset = function reset() {
+			this.texture = null;
+			this.mesh = null;
+		}
+		/**
+		 * Returns a texture representing the depth of the user's environment.
+		 *
+		 * @return {?Texture} The depth texture.
+		 */
+		;
+
+		_proto.getDepthTexture = function getDepthTexture() {
+			return this.texture;
+		};
+
+		return WebXRDepthSensing;
+	}();
+
+	function DepthTexture(width, height, type, mapping, wrapS, wrapT, magFilter, minFilter, anisotropy, format) {
+		format = format !== undefined ? format : DepthFormat;
+
+		if (format !== DepthFormat && format !== DepthStencilFormat) {
+			throw new Error('DepthTexture format must be either THREE.DepthFormat or THREE.DepthStencilFormat');
+		}
+
+		if (type === undefined && format === DepthFormat) type = UnsignedShortType;
+		if (type === undefined && format === DepthStencilFormat) type = UnsignedInt248Type;
+		Texture.call(this, null, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
+		this.image = {
+			width: width,
+			height: height
+		};
+		this.magFilter = magFilter !== undefined ? magFilter : NearestFilter;
+		this.minFilter = minFilter !== undefined ? minFilter : NearestFilter;
+		this.flipY = false;
+		this.generateMipmaps = false;
+	}
+
+	DepthTexture.prototype = Object.create(Texture.prototype);
+	DepthTexture.prototype.constructor = DepthTexture;
+	DepthTexture.prototype.isDepthTexture = true;
 
 	function WebXRManager(renderer, gl) {
 		var scope = this;
 		var session = null;
 		var framebufferScaleFactor = 1.0;
 		var referenceSpace = null;
-		var referenceSpaceType = 'local-floor';
+		var referenceSpaceType = 'local-floor'; // Set default foveation to maximum.
+
+		var foveation = 1.0;
 		var pose = null;
+		var glBaseLayer = null;
+		var depthSensing = new WebXRDepthSensing();
+		var attributes = gl.getContextAttributes();
+		var initialRenderTarget = null;
+		var newRenderTarget = null;
 		var controllers = [];
-		var inputSourcesMap = new Map(); //
+		var controllerInputSources = [];
+		var inputSourcesMap = new Map();
+		var currentSize = new Vector2();
+		var currentPixelRatio = null; //
 
 		var cameraL = new PerspectiveCamera();
 		cameraL.layers.enable(1);
@@ -16661,6 +18014,14 @@
 
 		this.enabled = false;
 		this.isPresenting = false;
+		/**
+		 * Returns a group representing the `target ray` space of the XR controller.
+		 * Use this space for visualizing 3D objects that support the user in pointing
+		 * tasks like UI interaction.
+		 *
+		 * @param {number} index - The index of the controller.
+		 * @return {Group} A group representing the `target ray` space.
+		 */
 
 		this.getController = function (index) {
 			var controller = controllers[index];
@@ -16672,6 +18033,22 @@
 
 			return controller.getTargetRaySpace();
 		};
+		/**
+		 * Returns a group representing the `grip` space of the XR controller.
+		 * Use this space for visualizing 3D objects that support the user in pointing
+		 * tasks like UI interaction.
+		 *
+		 * Note: If you want to show something in the user's hand AND offer a
+		 * pointing ray at the same time, you'll want to attached the handheld object
+		 * to the group returned by `getControllerGrip()` and the ray to the
+		 * group returned by `getController()`. The idea is to have two
+		 * different groups in two different coordinate spaces for the same WebXR
+		 * controller.
+		 *
+		 * @param {number} index - The index of the controller.
+		 * @return {Group} A group representing the `grip` space.
+		 */
+
 
 		this.getControllerGrip = function (index) {
 			var controller = controllers[index];
@@ -16697,9 +18074,17 @@
 
 
 		function onSessionEvent(event) {
-			var controller = inputSourcesMap.get(event.inputSource);
+			// const controller = inputSourcesMap.get( event.inputSource );
+			var controllerIndex = controllerInputSources.indexOf(event.inputSource);
 
-			if (controller) {
+			if (controllerIndex === -1) {
+				return;
+			}
+
+			var controller = controllers[controllerIndex];
+
+			if (controller !== undefined) {
+				controller.update(event.inputSource, event.frame,  referenceSpace);
 				controller.dispatchEvent({
 					type: event.type,
 					data: event.inputSource
@@ -16757,40 +18142,82 @@
 			return session;
 		};
 
-		this.setSession = function (value) {
-			session = value;
+		this.setSession = /*#__PURE__*/function () {
+			var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(value) {
+				var layerInit;
+				return regeneratorRuntime.wrap(function _callee$(_context) {
+					while (1) {
+						switch (_context.prev = _context.next) {
+							case 0:
+								session = value;
 
-			if (session !== null) {
-				session.addEventListener('select', onSessionEvent);
-				session.addEventListener('selectstart', onSessionEvent);
-				session.addEventListener('selectend', onSessionEvent);
-				session.addEventListener('squeeze', onSessionEvent);
-				session.addEventListener('squeezestart', onSessionEvent);
-				session.addEventListener('squeezeend', onSessionEvent);
-				session.addEventListener('end', onSessionEnd);
-				var attributes = gl.getContextAttributes();
+								if (!(session !== null)) {
+									_context.next = 24;
+									break;
+								}
 
-				if (attributes.xrCompatible !== true) {
-					gl.makeXRCompatible();
-				}
+								initialRenderTarget = renderer.getRenderTarget();
+								session.addEventListener('select', onSessionEvent);
+								session.addEventListener('selectstart', onSessionEvent);
+								session.addEventListener('selectend', onSessionEvent);
+								session.addEventListener('squeeze', onSessionEvent);
+								session.addEventListener('squeezestart', onSessionEvent);
+								session.addEventListener('squeezeend', onSessionEvent);
+								session.addEventListener('end', onSessionEnd);
+								session.addEventListener('inputsourceschange', onInputSourcesChange);
 
-				var layerInit = {
-					antialias: attributes.antialias,
-					alpha: attributes.alpha,
-					depth: attributes.depth,
-					stencil: attributes.stencil,
-					framebufferScaleFactor: framebufferScaleFactor
-				}; // eslint-disable-next-line no-undef
+								if (!(attributes.xrCompatible !== true)) {
+									_context.next = 14;
+									break;
+								}
 
-				var baseLayer = new XRWebGLLayer(session, gl, layerInit);
-				session.updateRenderState({
-					baseLayer: baseLayer
-				});
-				session.requestReferenceSpace(referenceSpaceType).then(onRequestReferenceSpace); //
+								_context.next = 14;
+								return gl.makeXRCompatible();
 
-				session.addEventListener('inputsourceschange', updateInputSources);
-			}
-		};
+							case 14:
+								currentPixelRatio = renderer.getPixelRatio();
+								renderer.getSize(currentSize);
+								layerInit = {
+									antialias: attributes.antialias,
+									alpha: attributes.alpha,
+									depth: attributes.depth,
+									stencil: attributes.stencil,
+									framebufferScaleFactor: framebufferScaleFactor
+								}; // // eslint-disable-next-line no-undef
+								// const baseLayer = new XRWebGLLayer( session, gl, layerInit );
+								//
+								// session.updateRenderState( { baseLayer: baseLayer } );
+
+								glBaseLayer = new XRWebGLLayer(session, gl, layerInit);
+								session.updateRenderState({
+									baseLayer: glBaseLayer
+								});
+								renderer.setPixelRatio(1);
+								renderer.setSize(glBaseLayer.framebufferWidth, glBaseLayer.framebufferHeight, false);
+								newRenderTarget = new WebGLRenderTarget(glBaseLayer.framebufferWidth, glBaseLayer.framebufferHeight, {
+									format: RGBAFormat,
+									type: UnsignedByteType,
+									colorSpace: renderer.outputColorSpace,
+									stencilBuffer: attributes.stencil,
+									resolveDepthBuffer: glBaseLayer.ignoreDepthValues === false,
+									resolveStencilBuffer: glBaseLayer.ignoreDepthValues === false
+								});
+								session.requestReferenceSpace(referenceSpaceType).then(onRequestReferenceSpace); //
+
+								session.addEventListener('inputsourceschange', updateInputSources);
+
+							case 24:
+							case "end":
+								return _context.stop();
+						}
+					}
+				}, _callee);
+			}));
+
+			return function (_x) {
+				return _ref.apply(this, arguments);
+			};
+		}();
 
 		function updateInputSources(event) {
 			var inputSources = session.inputSources; // Assign inputSources to available controllers
@@ -16926,7 +18353,91 @@
 			}
 
 			return cameraVR;
-		}; // Animation Loop
+		};
+		/**
+		 * Returns the amount of foveation used by the XR compositor for the projection layer.
+		 *
+		 * @return {number} The amount of foveation.
+		 */
+
+
+		this.getFoveation = function () {
+			if ( glBaseLayer === null) {
+				return undefined;
+			}
+
+			return foveation;
+		};
+		/**
+		 * Sets the foveation value.
+		 *
+		 * @param {number} value - A number in the range `[0,1]` where `0` means no foveation (full resolution)
+		 * and `1` means maximum foveation (the edges render at lower resolution).
+		 */
+
+
+		this.setFoveation = function (value) {
+			// 0 = no foveation = full resolution
+			// 1 = maximum foveation = the edges render at lower resolution
+			foveation = value;
+
+			if (glBaseLayer !== null && glBaseLayer.fixedFoveation !== undefined) {
+				glBaseLayer.fixedFoveation = value;
+			}
+		};
+		/**
+		 * Returns the current depth texture computed via depth sensing.
+		 *
+		 * @return {?Texture} The depth texture.
+		 */
+
+
+		this.getDepthTexture = function () {
+			return depthSensing.getDepthTexture();
+		};
+
+		function onInputSourcesChange(event) {
+			// Notify disconnected
+			for (var i = 0; i < event.removed.length; i++) {
+				var inputSource = event.removed[i];
+				var index = controllerInputSources.indexOf(inputSource);
+
+				if (index >= 0) {
+					controllerInputSources[index] = null;
+					controllers[index].disconnect(inputSource);
+				}
+			} // Notify connected
+
+
+			for (var _i4 = 0; _i4 < event.added.length; _i4++) {
+				var _inputSource2 = event.added[_i4];
+				var controllerIndex = controllerInputSources.indexOf(_inputSource2);
+
+				if (controllerIndex === -1) {
+					// Assign input source a controller that currently has no input source
+					for (var _i5 = 0; _i5 < controllers.length; _i5++) {
+						if (_i5 >= controllerInputSources.length) {
+							controllerInputSources.push(_inputSource2);
+							controllerIndex = _i5;
+							break;
+						} else if (controllerInputSources[_i5] === null) {
+							controllerInputSources[_i5] = _inputSource2;
+							controllerIndex = _i5;
+							break;
+						}
+					} // If all controllers do currently receive input we ignore new ones
+
+
+					if (controllerIndex === -1) break;
+				}
+
+				var controller = controllers[controllerIndex];
+
+				if (controller) {
+					controller.connect(_inputSource2);
+				}
+			}
+		} // Animation Loop
 
 
 		var onAnimationFrameCallback = null;
@@ -16966,9 +18477,9 @@
 
 			var inputSources = session.inputSources;
 
-			for (var _i4 = 0; _i4 < controllers.length; _i4++) {
-				var controller = controllers[_i4];
-				var inputSource = inputSources[_i4];
+			for (var _i6 = 0; _i6 < controllers.length; _i6++) {
+				var controller = controllers[_i6];
+				var inputSource = inputSources[_i6];
 				controller.update(inputSource, frame, referenceSpace);
 			}
 
@@ -20384,954 +21895,6 @@
 	CanvasTexture.prototype.constructor = CanvasTexture;
 	CanvasTexture.prototype.isCanvasTexture = true;
 
-	function DepthTexture(width, height, type, mapping, wrapS, wrapT, magFilter, minFilter, anisotropy, format) {
-		format = format !== undefined ? format : DepthFormat;
-
-		if (format !== DepthFormat && format !== DepthStencilFormat) {
-			throw new Error('DepthTexture format must be either THREE.DepthFormat or THREE.DepthStencilFormat');
-		}
-
-		if (type === undefined && format === DepthFormat) type = UnsignedShortType;
-		if (type === undefined && format === DepthStencilFormat) type = UnsignedInt248Type;
-		Texture.call(this, null, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
-		this.image = {
-			width: width,
-			height: height
-		};
-		this.magFilter = magFilter !== undefined ? magFilter : NearestFilter;
-		this.minFilter = minFilter !== undefined ? minFilter : NearestFilter;
-		this.flipY = false;
-		this.generateMipmaps = false;
-	}
-
-	DepthTexture.prototype = Object.create(Texture.prototype);
-	DepthTexture.prototype.constructor = DepthTexture;
-	DepthTexture.prototype.isDepthTexture = true;
-
-	var _geometryId = 0; // Geometry uses even numbers as Id
-
-	var _m1$3 = new Matrix4();
-
-	var _obj$1 = new Object3D();
-
-	var _offset$1 = new Vector3();
-
-	function Geometry() {
-		Object.defineProperty(this, 'id', {
-			value: _geometryId += 2
-		});
-		this.uuid = MathUtils.generateUUID();
-		this.name = '';
-		this.type = 'Geometry';
-		this.vertices = [];
-		this.colors = [];
-		this.faces = [];
-		this.faceVertexUvs = [[]];
-		this.morphTargets = [];
-		this.morphNormals = [];
-		this.skinWeights = [];
-		this.skinIndices = [];
-		this.lineDistances = [];
-		this.boundingBox = null;
-		this.boundingSphere = null; // update flags
-
-		this.elementsNeedUpdate = false;
-		this.verticesNeedUpdate = false;
-		this.uvsNeedUpdate = false;
-		this.normalsNeedUpdate = false;
-		this.colorsNeedUpdate = false;
-		this.lineDistancesNeedUpdate = false;
-		this.groupsNeedUpdate = false;
-	}
-
-	Geometry.prototype = Object.assign(Object.create(EventDispatcher.prototype), {
-		constructor: Geometry,
-		isGeometry: true,
-		applyMatrix4: function applyMatrix4(matrix) {
-			var normalMatrix = new Matrix3().getNormalMatrix(matrix);
-
-			for (var i = 0, il = this.vertices.length; i < il; i++) {
-				var vertex = this.vertices[i];
-				vertex.applyMatrix4(matrix);
-			}
-
-			for (var _i = 0, _il = this.faces.length; _i < _il; _i++) {
-				var face = this.faces[_i];
-				face.normal.applyMatrix3(normalMatrix).normalize();
-
-				for (var j = 0, jl = face.vertexNormals.length; j < jl; j++) {
-					face.vertexNormals[j].applyMatrix3(normalMatrix).normalize();
-				}
-			}
-
-			if (this.boundingBox !== null) {
-				this.computeBoundingBox();
-			}
-
-			if (this.boundingSphere !== null) {
-				this.computeBoundingSphere();
-			}
-
-			this.verticesNeedUpdate = true;
-			this.normalsNeedUpdate = true;
-			return this;
-		},
-		rotateX: function rotateX(angle) {
-			// rotate geometry around world x-axis
-			_m1$3.makeRotationX(angle);
-
-			this.applyMatrix4(_m1$3);
-			return this;
-		},
-		rotateY: function rotateY(angle) {
-			// rotate geometry around world y-axis
-			_m1$3.makeRotationY(angle);
-
-			this.applyMatrix4(_m1$3);
-			return this;
-		},
-		rotateZ: function rotateZ(angle) {
-			// rotate geometry around world z-axis
-			_m1$3.makeRotationZ(angle);
-
-			this.applyMatrix4(_m1$3);
-			return this;
-		},
-		translate: function translate(x, y, z) {
-			// translate geometry
-			_m1$3.makeTranslation(x, y, z);
-
-			this.applyMatrix4(_m1$3);
-			return this;
-		},
-		scale: function scale(x, y, z) {
-			// scale geometry
-			_m1$3.makeScale(x, y, z);
-
-			this.applyMatrix4(_m1$3);
-			return this;
-		},
-		lookAt: function lookAt(vector) {
-			_obj$1.lookAt(vector);
-
-			_obj$1.updateMatrix();
-
-			this.applyMatrix4(_obj$1.matrix);
-			return this;
-		},
-		fromBufferGeometry: function fromBufferGeometry(geometry) {
-			var scope = this;
-			var index = geometry.index !== null ? geometry.index : undefined;
-			var attributes = geometry.attributes;
-
-			if (attributes.position === undefined) {
-				console.error('THREE.Geometry.fromBufferGeometry(): Position attribute required for conversion.');
-				return this;
-			}
-
-			var position = attributes.position;
-			var normal = attributes.normal;
-			var color = attributes.color;
-			var uv = attributes.uv;
-			var uv2 = attributes.uv2;
-			if (uv2 !== undefined) this.faceVertexUvs[1] = [];
-
-			for (var i = 0; i < position.count; i++) {
-				scope.vertices.push(new Vector3().fromBufferAttribute(position, i));
-
-				if (color !== undefined) {
-					scope.colors.push(new Color().fromBufferAttribute(color, i));
-				}
-			}
-
-			function addFace(a, b, c, materialIndex) {
-				var vertexColors = color === undefined ? [] : [scope.colors[a].clone(), scope.colors[b].clone(), scope.colors[c].clone()];
-				var vertexNormals = normal === undefined ? [] : [new Vector3().fromBufferAttribute(normal, a), new Vector3().fromBufferAttribute(normal, b), new Vector3().fromBufferAttribute(normal, c)];
-				var face = new Face3(a, b, c, vertexNormals, vertexColors, materialIndex);
-				scope.faces.push(face);
-
-				if (uv !== undefined) {
-					scope.faceVertexUvs[0].push([new Vector2().fromBufferAttribute(uv, a), new Vector2().fromBufferAttribute(uv, b), new Vector2().fromBufferAttribute(uv, c)]);
-				}
-
-				if (uv2 !== undefined) {
-					scope.faceVertexUvs[1].push([new Vector2().fromBufferAttribute(uv2, a), new Vector2().fromBufferAttribute(uv2, b), new Vector2().fromBufferAttribute(uv2, c)]);
-				}
-			}
-
-			var groups = geometry.groups;
-
-			if (groups.length > 0) {
-				for (var _i2 = 0; _i2 < groups.length; _i2++) {
-					var group = groups[_i2];
-					var start = group.start;
-					var count = group.count;
-
-					for (var j = start, jl = start + count; j < jl; j += 3) {
-						if (index !== undefined) {
-							addFace(index.getX(j), index.getX(j + 1), index.getX(j + 2), group.materialIndex);
-						} else {
-							addFace(j, j + 1, j + 2, group.materialIndex);
-						}
-					}
-				}
-			} else {
-				if (index !== undefined) {
-					for (var _i3 = 0; _i3 < index.count; _i3 += 3) {
-						addFace(index.getX(_i3), index.getX(_i3 + 1), index.getX(_i3 + 2));
-					}
-				} else {
-					for (var _i4 = 0; _i4 < position.count; _i4 += 3) {
-						addFace(_i4, _i4 + 1, _i4 + 2);
-					}
-				}
-			}
-
-			this.computeFaceNormals();
-
-			if (geometry.boundingBox !== null) {
-				this.boundingBox = geometry.boundingBox.clone();
-			}
-
-			if (geometry.boundingSphere !== null) {
-				this.boundingSphere = geometry.boundingSphere.clone();
-			}
-
-			return this;
-		},
-		center: function center() {
-			this.computeBoundingBox();
-			this.boundingBox.getCenter(_offset$1).negate();
-			this.translate(_offset$1.x, _offset$1.y, _offset$1.z);
-			return this;
-		},
-		normalize: function normalize() {
-			this.computeBoundingSphere();
-			var center = this.boundingSphere.center;
-			var radius = this.boundingSphere.radius;
-			var s = radius === 0 ? 1 : 1.0 / radius;
-			var matrix = new Matrix4();
-			matrix.set(s, 0, 0, -s * center.x, 0, s, 0, -s * center.y, 0, 0, s, -s * center.z, 0, 0, 0, 1);
-			this.applyMatrix4(matrix);
-			return this;
-		},
-		computeFaceNormals: function computeFaceNormals() {
-			var cb = new Vector3(),
-					ab = new Vector3();
-
-			for (var f = 0, fl = this.faces.length; f < fl; f++) {
-				var face = this.faces[f];
-				var vA = this.vertices[face.a];
-				var vB = this.vertices[face.b];
-				var vC = this.vertices[face.c];
-				cb.subVectors(vC, vB);
-				ab.subVectors(vA, vB);
-				cb.cross(ab);
-				cb.normalize();
-				face.normal.copy(cb);
-			}
-		},
-		computeVertexNormals: function computeVertexNormals(areaWeighted) {
-			if (areaWeighted === void 0) {
-				areaWeighted = true;
-			}
-
-			var vertices = new Array(this.vertices.length);
-
-			for (var v = 0, vl = this.vertices.length; v < vl; v++) {
-				vertices[v] = new Vector3();
-			}
-
-			if (areaWeighted) {
-				// vertex normals weighted by triangle areas
-				// http://www.iquilezles.org/www/articles/normals/normals.htm
-				var cb = new Vector3(),
-						ab = new Vector3();
-
-				for (var f = 0, fl = this.faces.length; f < fl; f++) {
-					var face = this.faces[f];
-					var vA = this.vertices[face.a];
-					var vB = this.vertices[face.b];
-					var vC = this.vertices[face.c];
-					cb.subVectors(vC, vB);
-					ab.subVectors(vA, vB);
-					cb.cross(ab);
-					vertices[face.a].add(cb);
-					vertices[face.b].add(cb);
-					vertices[face.c].add(cb);
-				}
-			} else {
-				this.computeFaceNormals();
-
-				for (var _f = 0, _fl = this.faces.length; _f < _fl; _f++) {
-					var _face = this.faces[_f];
-
-					vertices[_face.a].add(_face.normal);
-
-					vertices[_face.b].add(_face.normal);
-
-					vertices[_face.c].add(_face.normal);
-				}
-			}
-
-			for (var _v = 0, _vl = this.vertices.length; _v < _vl; _v++) {
-				vertices[_v].normalize();
-			}
-
-			for (var _f2 = 0, _fl2 = this.faces.length; _f2 < _fl2; _f2++) {
-				var _face2 = this.faces[_f2];
-				var vertexNormals = _face2.vertexNormals;
-
-				if (vertexNormals.length === 3) {
-					vertexNormals[0].copy(vertices[_face2.a]);
-					vertexNormals[1].copy(vertices[_face2.b]);
-					vertexNormals[2].copy(vertices[_face2.c]);
-				} else {
-					vertexNormals[0] = vertices[_face2.a].clone();
-					vertexNormals[1] = vertices[_face2.b].clone();
-					vertexNormals[2] = vertices[_face2.c].clone();
-				}
-			}
-
-			if (this.faces.length > 0) {
-				this.normalsNeedUpdate = true;
-			}
-		},
-		computeFlatVertexNormals: function computeFlatVertexNormals() {
-			this.computeFaceNormals();
-
-			for (var f = 0, fl = this.faces.length; f < fl; f++) {
-				var face = this.faces[f];
-				var vertexNormals = face.vertexNormals;
-
-				if (vertexNormals.length === 3) {
-					vertexNormals[0].copy(face.normal);
-					vertexNormals[1].copy(face.normal);
-					vertexNormals[2].copy(face.normal);
-				} else {
-					vertexNormals[0] = face.normal.clone();
-					vertexNormals[1] = face.normal.clone();
-					vertexNormals[2] = face.normal.clone();
-				}
-			}
-
-			if (this.faces.length > 0) {
-				this.normalsNeedUpdate = true;
-			}
-		},
-		computeMorphNormals: function computeMorphNormals() {
-			// save original normals
-			// - create temp variables on first access
-			//	 otherwise just copy (for faster repeated calls)
-			for (var f = 0, fl = this.faces.length; f < fl; f++) {
-				var face = this.faces[f];
-
-				if (!face.__originalFaceNormal) {
-					face.__originalFaceNormal = face.normal.clone();
-				} else {
-					face.__originalFaceNormal.copy(face.normal);
-				}
-
-				if (!face.__originalVertexNormals) face.__originalVertexNormals = [];
-
-				for (var i = 0, il = face.vertexNormals.length; i < il; i++) {
-					if (!face.__originalVertexNormals[i]) {
-						face.__originalVertexNormals[i] = face.vertexNormals[i].clone();
-					} else {
-						face.__originalVertexNormals[i].copy(face.vertexNormals[i]);
-					}
-				}
-			} // use temp geometry to compute face and vertex normals for each morph
-
-
-			var tmpGeo = new Geometry();
-			tmpGeo.faces = this.faces;
-
-			for (var _i5 = 0, _il2 = this.morphTargets.length; _i5 < _il2; _i5++) {
-				// create on first access
-				if (!this.morphNormals[_i5]) {
-					this.morphNormals[_i5] = {};
-					this.morphNormals[_i5].faceNormals = [];
-					this.morphNormals[_i5].vertexNormals = [];
-					var dstNormalsFace = this.morphNormals[_i5].faceNormals;
-					var dstNormalsVertex = this.morphNormals[_i5].vertexNormals;
-
-					for (var _f3 = 0, _fl3 = this.faces.length; _f3 < _fl3; _f3++) {
-						var faceNormal = new Vector3();
-						var vertexNormals = {
-							a: new Vector3(),
-							b: new Vector3(),
-							c: new Vector3()
-						};
-						dstNormalsFace.push(faceNormal);
-						dstNormalsVertex.push(vertexNormals);
-					}
-				}
-
-				var morphNormals = this.morphNormals[_i5]; // set vertices to morph target
-
-				tmpGeo.vertices = this.morphTargets[_i5].vertices; // compute morph normals
-
-				tmpGeo.computeFaceNormals();
-				tmpGeo.computeVertexNormals(); // store morph normals
-
-				for (var _f4 = 0, _fl4 = this.faces.length; _f4 < _fl4; _f4++) {
-					var _face3 = this.faces[_f4];
-					var _faceNormal = morphNormals.faceNormals[_f4];
-					var _vertexNormals = morphNormals.vertexNormals[_f4];
-
-					_faceNormal.copy(_face3.normal);
-
-					_vertexNormals.a.copy(_face3.vertexNormals[0]);
-
-					_vertexNormals.b.copy(_face3.vertexNormals[1]);
-
-					_vertexNormals.c.copy(_face3.vertexNormals[2]);
-				}
-			} // restore original normals
-
-
-			for (var _f5 = 0, _fl5 = this.faces.length; _f5 < _fl5; _f5++) {
-				var _face4 = this.faces[_f5];
-				_face4.normal = _face4.__originalFaceNormal;
-				_face4.vertexNormals = _face4.__originalVertexNormals;
-			}
-		},
-		computeBoundingBox: function computeBoundingBox() {
-			if (this.boundingBox === null) {
-				this.boundingBox = new Box3();
-			}
-
-			this.boundingBox.setFromPoints(this.vertices);
-		},
-		computeBoundingSphere: function computeBoundingSphere() {
-			if (this.boundingSphere === null) {
-				this.boundingSphere = new Sphere();
-			}
-
-			this.boundingSphere.setFromPoints(this.vertices);
-		},
-		merge: function merge(geometry, matrix, materialIndexOffset) {
-			if (materialIndexOffset === void 0) {
-				materialIndexOffset = 0;
-			}
-
-			if (!(geometry && geometry.isGeometry)) {
-				console.error('THREE.Geometry.merge(): geometry not an instance of THREE.Geometry.', geometry);
-				return;
-			}
-
-			var normalMatrix;
-			var vertexOffset = this.vertices.length,
-					vertices1 = this.vertices,
-					vertices2 = geometry.vertices,
-					faces1 = this.faces,
-					faces2 = geometry.faces,
-					colors1 = this.colors,
-					colors2 = geometry.colors;
-
-			if (matrix !== undefined) {
-				normalMatrix = new Matrix3().getNormalMatrix(matrix);
-			} // vertices
-
-
-			for (var i = 0, il = vertices2.length; i < il; i++) {
-				var vertex = vertices2[i];
-				var vertexCopy = vertex.clone();
-				if (matrix !== undefined) vertexCopy.applyMatrix4(matrix);
-				vertices1.push(vertexCopy);
-			} // colors
-
-
-			for (var _i6 = 0, _il3 = colors2.length; _i6 < _il3; _i6++) {
-				colors1.push(colors2[_i6].clone());
-			} // faces
-
-
-			for (var _i7 = 0, _il4 = faces2.length; _i7 < _il4; _i7++) {
-				var face = faces2[_i7];
-				var normal = void 0,
-						color = void 0;
-				var faceVertexNormals = face.vertexNormals,
-						faceVertexColors = face.vertexColors;
-				var faceCopy = new Face3(face.a + vertexOffset, face.b + vertexOffset, face.c + vertexOffset);
-				faceCopy.normal.copy(face.normal);
-
-				if (normalMatrix !== undefined) {
-					faceCopy.normal.applyMatrix3(normalMatrix).normalize();
-				}
-
-				for (var j = 0, jl = faceVertexNormals.length; j < jl; j++) {
-					normal = faceVertexNormals[j].clone();
-
-					if (normalMatrix !== undefined) {
-						normal.applyMatrix3(normalMatrix).normalize();
-					}
-
-					faceCopy.vertexNormals.push(normal);
-				}
-
-				faceCopy.color.copy(face.color);
-
-				for (var _j = 0, _jl = faceVertexColors.length; _j < _jl; _j++) {
-					color = faceVertexColors[_j];
-					faceCopy.vertexColors.push(color.clone());
-				}
-
-				faceCopy.materialIndex = face.materialIndex + materialIndexOffset;
-				faces1.push(faceCopy);
-			} // uvs
-
-
-			for (var _i8 = 0, _il5 = geometry.faceVertexUvs.length; _i8 < _il5; _i8++) {
-				var faceVertexUvs2 = geometry.faceVertexUvs[_i8];
-				if (this.faceVertexUvs[_i8] === undefined) this.faceVertexUvs[_i8] = [];
-
-				for (var _j2 = 0, _jl2 = faceVertexUvs2.length; _j2 < _jl2; _j2++) {
-					var uvs2 = faceVertexUvs2[_j2],
-							uvsCopy = [];
-
-					for (var k = 0, kl = uvs2.length; k < kl; k++) {
-						uvsCopy.push(uvs2[k].clone());
-					}
-
-					this.faceVertexUvs[_i8].push(uvsCopy);
-				}
-			}
-		},
-		mergeMesh: function mergeMesh(mesh) {
-			if (!(mesh && mesh.isMesh)) {
-				console.error('THREE.Geometry.mergeMesh(): mesh not an instance of THREE.Mesh.', mesh);
-				return;
-			}
-
-			if (mesh.matrixAutoUpdate) mesh.updateMatrix();
-			this.merge(mesh.geometry, mesh.matrix);
-		},
-
-		/*
-		 * Checks for duplicate vertices with hashmap.
-		 * Duplicated vertices are removed
-		 * and faces' vertices are updated.
-		 */
-		mergeVertices: function mergeVertices(precisionPoints) {
-			if (precisionPoints === void 0) {
-				precisionPoints = 4;
-			}
-
-			var verticesMap = {}; // Hashmap for looking up vertices by position coordinates (and making sure they are unique)
-
-			var unique = [],
-					changes = [];
-			var precision = Math.pow(10, precisionPoints);
-
-			for (var i = 0, il = this.vertices.length; i < il; i++) {
-				var v = this.vertices[i];
-				var key = Math.round(v.x * precision) + '_' + Math.round(v.y * precision) + '_' + Math.round(v.z * precision);
-
-				if (verticesMap[key] === undefined) {
-					verticesMap[key] = i;
-					unique.push(this.vertices[i]);
-					changes[i] = unique.length - 1;
-				} else {
-					//console.log('Duplicate vertex found. ', i, ' could be using ', verticesMap[key]);
-					changes[i] = changes[verticesMap[key]];
-				}
-			} // if faces are completely degenerate after merging vertices, we
-			// have to remove them from the geometry.
-
-
-			var faceIndicesToRemove = [];
-
-			for (var _i9 = 0, _il6 = this.faces.length; _i9 < _il6; _i9++) {
-				var face = this.faces[_i9];
-				face.a = changes[face.a];
-				face.b = changes[face.b];
-				face.c = changes[face.c];
-				var indices = [face.a, face.b, face.c]; // if any duplicate vertices are found in a Face3
-				// we have to remove the face as nothing can be saved
-
-				for (var n = 0; n < 3; n++) {
-					if (indices[n] === indices[(n + 1) % 3]) {
-						faceIndicesToRemove.push(_i9);
-						break;
-					}
-				}
-			}
-
-			for (var _i10 = faceIndicesToRemove.length - 1; _i10 >= 0; _i10--) {
-				var idx = faceIndicesToRemove[_i10];
-				this.faces.splice(idx, 1);
-
-				for (var j = 0, jl = this.faceVertexUvs.length; j < jl; j++) {
-					this.faceVertexUvs[j].splice(idx, 1);
-				}
-			} // Use unique set of vertices
-
-
-			var diff = this.vertices.length - unique.length;
-			this.vertices = unique;
-			return diff;
-		},
-		setFromPoints: function setFromPoints(points) {
-			this.vertices = [];
-
-			for (var i = 0, l = points.length; i < l; i++) {
-				var point = points[i];
-				this.vertices.push(new Vector3(point.x, point.y, point.z || 0));
-			}
-
-			return this;
-		},
-		sortFacesByMaterialIndex: function sortFacesByMaterialIndex() {
-			var faces = this.faces;
-			var length = faces.length; // tag faces
-
-			for (var i = 0; i < length; i++) {
-				faces[i]._id = i;
-			} // sort faces
-
-
-			function materialIndexSort(a, b) {
-				return a.materialIndex - b.materialIndex;
-			}
-
-			faces.sort(materialIndexSort); // sort uvs
-
-			var uvs1 = this.faceVertexUvs[0];
-			var uvs2 = this.faceVertexUvs[1];
-			var newUvs1, newUvs2;
-			if (uvs1 && uvs1.length === length) newUvs1 = [];
-			if (uvs2 && uvs2.length === length) newUvs2 = [];
-
-			for (var _i11 = 0; _i11 < length; _i11++) {
-				var id = faces[_i11]._id;
-				if (newUvs1) newUvs1.push(uvs1[id]);
-				if (newUvs2) newUvs2.push(uvs2[id]);
-			}
-
-			if (newUvs1) this.faceVertexUvs[0] = newUvs1;
-			if (newUvs2) this.faceVertexUvs[1] = newUvs2;
-		},
-		toJSON: function toJSON() {
-			var data = {
-				metadata: {
-					version: 4.5,
-					type: 'Geometry',
-					generator: 'Geometry.toJSON'
-				}
-			}; // standard Geometry serialization
-
-			data.uuid = this.uuid;
-			data.type = this.type;
-			if (this.name !== '') data.name = this.name;
-
-			if (this.parameters !== undefined) {
-				var parameters = this.parameters;
-
-				for (var key in parameters) {
-					if (parameters[key] !== undefined) data[key] = parameters[key];
-				}
-
-				return data;
-			}
-
-			var vertices = [];
-
-			for (var i = 0; i < this.vertices.length; i++) {
-				var vertex = this.vertices[i];
-				vertices.push(vertex.x, vertex.y, vertex.z);
-			}
-
-			var faces = [];
-			var normals = [];
-			var normalsHash = {};
-			var colors = [];
-			var colorsHash = {};
-			var uvs = [];
-			var uvsHash = {};
-
-			for (var _i12 = 0; _i12 < this.faces.length; _i12++) {
-				var face = this.faces[_i12];
-				var hasMaterial = true;
-				var hasFaceUv = false; // deprecated
-
-				var hasFaceVertexUv = this.faceVertexUvs[0][_i12] !== undefined;
-				var hasFaceNormal = face.normal.length() > 0;
-				var hasFaceVertexNormal = face.vertexNormals.length > 0;
-				var hasFaceColor = face.color.r !== 1 || face.color.g !== 1 || face.color.b !== 1;
-				var hasFaceVertexColor = face.vertexColors.length > 0;
-				var faceType = 0;
-				faceType = setBit(faceType, 0, 0); // isQuad
-
-				faceType = setBit(faceType, 1, hasMaterial);
-				faceType = setBit(faceType, 2, hasFaceUv);
-				faceType = setBit(faceType, 3, hasFaceVertexUv);
-				faceType = setBit(faceType, 4, hasFaceNormal);
-				faceType = setBit(faceType, 5, hasFaceVertexNormal);
-				faceType = setBit(faceType, 6, hasFaceColor);
-				faceType = setBit(faceType, 7, hasFaceVertexColor);
-				faces.push(faceType);
-				faces.push(face.a, face.b, face.c);
-				faces.push(face.materialIndex);
-
-				if (hasFaceVertexUv) {
-					var faceVertexUvs = this.faceVertexUvs[0][_i12];
-					faces.push(getUvIndex(faceVertexUvs[0]), getUvIndex(faceVertexUvs[1]), getUvIndex(faceVertexUvs[2]));
-				}
-
-				if (hasFaceNormal) {
-					faces.push(getNormalIndex(face.normal));
-				}
-
-				if (hasFaceVertexNormal) {
-					var vertexNormals = face.vertexNormals;
-					faces.push(getNormalIndex(vertexNormals[0]), getNormalIndex(vertexNormals[1]), getNormalIndex(vertexNormals[2]));
-				}
-
-				if (hasFaceColor) {
-					faces.push(getColorIndex(face.color));
-				}
-
-				if (hasFaceVertexColor) {
-					var vertexColors = face.vertexColors;
-					faces.push(getColorIndex(vertexColors[0]), getColorIndex(vertexColors[1]), getColorIndex(vertexColors[2]));
-				}
-			}
-
-			function setBit(value, position, enabled) {
-				return enabled ? value | 1 << position : value & ~(1 << position);
-			}
-
-			function getNormalIndex(normal) {
-				var hash = normal.x.toString() + normal.y.toString() + normal.z.toString();
-
-				if (normalsHash[hash] !== undefined) {
-					return normalsHash[hash];
-				}
-
-				normalsHash[hash] = normals.length / 3;
-				normals.push(normal.x, normal.y, normal.z);
-				return normalsHash[hash];
-			}
-
-			function getColorIndex(color) {
-				var hash = color.r.toString() + color.g.toString() + color.b.toString();
-
-				if (colorsHash[hash] !== undefined) {
-					return colorsHash[hash];
-				}
-
-				colorsHash[hash] = colors.length;
-				colors.push(color.getHex());
-				return colorsHash[hash];
-			}
-
-			function getUvIndex(uv) {
-				var hash = uv.x.toString() + uv.y.toString();
-
-				if (uvsHash[hash] !== undefined) {
-					return uvsHash[hash];
-				}
-
-				uvsHash[hash] = uvs.length / 2;
-				uvs.push(uv.x, uv.y);
-				return uvsHash[hash];
-			}
-
-			data.data = {};
-			data.data.vertices = vertices;
-			data.data.normals = normals;
-			if (colors.length > 0) data.data.colors = colors;
-			if (uvs.length > 0) data.data.uvs = [uvs]; // temporal backward compatibility
-
-			data.data.faces = faces;
-			return data;
-		},
-		clone: function clone() {
-			/*
-			 // Handle primitives
-				 const parameters = this.parameters;
-				 if ( parameters !== undefined ) {
-				 const values = [];
-				 for ( const key in parameters ) {
-				 values.push( parameters[ key ] );
-				 }
-				 const geometry = Object.create( this.constructor.prototype );
-			 this.constructor.apply( geometry, values );
-			 return geometry;
-				 }
-				 return new this.constructor().copy( this );
-			 */
-			return new Geometry().copy(this);
-		},
-		copy: function copy(source) {
-			// reset
-			this.vertices = [];
-			this.colors = [];
-			this.faces = [];
-			this.faceVertexUvs = [[]];
-			this.morphTargets = [];
-			this.morphNormals = [];
-			this.skinWeights = [];
-			this.skinIndices = [];
-			this.lineDistances = [];
-			this.boundingBox = null;
-			this.boundingSphere = null; // name
-
-			this.name = source.name; // vertices
-
-			var vertices = source.vertices;
-
-			for (var i = 0, il = vertices.length; i < il; i++) {
-				this.vertices.push(vertices[i].clone());
-			} // colors
-
-
-			var colors = source.colors;
-
-			for (var _i13 = 0, _il7 = colors.length; _i13 < _il7; _i13++) {
-				this.colors.push(colors[_i13].clone());
-			} // faces
-
-
-			var faces = source.faces;
-
-			for (var _i14 = 0, _il8 = faces.length; _i14 < _il8; _i14++) {
-				this.faces.push(faces[_i14].clone());
-			} // face vertex uvs
-
-
-			for (var _i15 = 0, _il9 = source.faceVertexUvs.length; _i15 < _il9; _i15++) {
-				var faceVertexUvs = source.faceVertexUvs[_i15];
-
-				if (this.faceVertexUvs[_i15] === undefined) {
-					this.faceVertexUvs[_i15] = [];
-				}
-
-				for (var j = 0, jl = faceVertexUvs.length; j < jl; j++) {
-					var uvs = faceVertexUvs[j],
-							uvsCopy = [];
-
-					for (var k = 0, kl = uvs.length; k < kl; k++) {
-						var uv = uvs[k];
-						uvsCopy.push(uv.clone());
-					}
-
-					this.faceVertexUvs[_i15].push(uvsCopy);
-				}
-			} // morph targets
-
-
-			var morphTargets = source.morphTargets;
-
-			for (var _i16 = 0, _il10 = morphTargets.length; _i16 < _il10; _i16++) {
-				var morphTarget = {};
-				morphTarget.name = morphTargets[_i16].name; // vertices
-
-				if (morphTargets[_i16].vertices !== undefined) {
-					morphTarget.vertices = [];
-
-					for (var _j3 = 0, _jl3 = morphTargets[_i16].vertices.length; _j3 < _jl3; _j3++) {
-						morphTarget.vertices.push(morphTargets[_i16].vertices[_j3].clone());
-					}
-				} // normals
-
-
-				if (morphTargets[_i16].normals !== undefined) {
-					morphTarget.normals = [];
-
-					for (var _j4 = 0, _jl4 = morphTargets[_i16].normals.length; _j4 < _jl4; _j4++) {
-						morphTarget.normals.push(morphTargets[_i16].normals[_j4].clone());
-					}
-				}
-
-				this.morphTargets.push(morphTarget);
-			} // morph normals
-
-
-			var morphNormals = source.morphNormals;
-
-			for (var _i17 = 0, _il11 = morphNormals.length; _i17 < _il11; _i17++) {
-				var morphNormal = {}; // vertex normals
-
-				if (morphNormals[_i17].vertexNormals !== undefined) {
-					morphNormal.vertexNormals = [];
-
-					for (var _j5 = 0, _jl5 = morphNormals[_i17].vertexNormals.length; _j5 < _jl5; _j5++) {
-						var srcVertexNormal = morphNormals[_i17].vertexNormals[_j5];
-						var destVertexNormal = {};
-						destVertexNormal.a = srcVertexNormal.a.clone();
-						destVertexNormal.b = srcVertexNormal.b.clone();
-						destVertexNormal.c = srcVertexNormal.c.clone();
-						morphNormal.vertexNormals.push(destVertexNormal);
-					}
-				} // face normals
-
-
-				if (morphNormals[_i17].faceNormals !== undefined) {
-					morphNormal.faceNormals = [];
-
-					for (var _j6 = 0, _jl6 = morphNormals[_i17].faceNormals.length; _j6 < _jl6; _j6++) {
-						morphNormal.faceNormals.push(morphNormals[_i17].faceNormals[_j6].clone());
-					}
-				}
-
-				this.morphNormals.push(morphNormal);
-			} // skin weights
-
-
-			var skinWeights = source.skinWeights;
-
-			for (var _i18 = 0, _il12 = skinWeights.length; _i18 < _il12; _i18++) {
-				this.skinWeights.push(skinWeights[_i18].clone());
-			} // skin indices
-
-
-			var skinIndices = source.skinIndices;
-
-			for (var _i19 = 0, _il13 = skinIndices.length; _i19 < _il13; _i19++) {
-				this.skinIndices.push(skinIndices[_i19].clone());
-			} // line distances
-
-
-			var lineDistances = source.lineDistances;
-
-			for (var _i20 = 0, _il14 = lineDistances.length; _i20 < _il14; _i20++) {
-				this.lineDistances.push(lineDistances[_i20]);
-			} // bounding box
-
-
-			var boundingBox = source.boundingBox;
-
-			if (boundingBox !== null) {
-				this.boundingBox = boundingBox.clone();
-			} // bounding sphere
-
-
-			var boundingSphere = source.boundingSphere;
-
-			if (boundingSphere !== null) {
-				this.boundingSphere = boundingSphere.clone();
-			} // update flags
-
-
-			this.elementsNeedUpdate = source.elementsNeedUpdate;
-			this.verticesNeedUpdate = source.verticesNeedUpdate;
-			this.uvsNeedUpdate = source.uvsNeedUpdate;
-			this.normalsNeedUpdate = source.normalsNeedUpdate;
-			this.colorsNeedUpdate = source.colorsNeedUpdate;
-			this.lineDistancesNeedUpdate = source.lineDistancesNeedUpdate;
-			this.groupsNeedUpdate = source.groupsNeedUpdate;
-			return this;
-		},
-		dispose: function dispose() {
-			this.dispatchEvent({
-				type: 'dispose'
-			});
-		}
-	});
-
 	var BoxGeometry = /*#__PURE__*/function (_Geometry) {
 		_inheritsLoose(BoxGeometry, _Geometry);
 
@@ -23725,31 +24288,6 @@
 
 	ParametricGeometry.prototype = Object.create(Geometry.prototype);
 	ParametricGeometry.prototype.constructor = ParametricGeometry;
-
-	var PlaneGeometry = /*#__PURE__*/function (_Geometry) {
-		_inheritsLoose(PlaneGeometry, _Geometry);
-
-		function PlaneGeometry(width, height, widthSegments, heightSegments) {
-			var _this;
-
-			_this = _Geometry.call(this) || this;
-			_this.type = 'PlaneGeometry';
-			_this.parameters = {
-				width: width,
-				height: height,
-				widthSegments: widthSegments,
-				heightSegments: heightSegments
-			};
-
-			_this.fromBufferGeometry(new PlaneBufferGeometry(width, height, widthSegments, heightSegments));
-
-			_this.mergeVertices();
-
-			return _this;
-		}
-
-		return PlaneGeometry;
-	}(Geometry);
 
 	var PolyhedronGeometry = /*#__PURE__*/function (_Geometry) {
 		_inheritsLoose(PolyhedronGeometry, _Geometry);

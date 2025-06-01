@@ -5,6 +5,18 @@ import { Vector3 } from '../../math/Vector3.js';
 import { Vector4 } from '../../math/Vector4.js';
 import { WebGLAnimation } from '../webgl/WebGLAnimation.js';
 import { WebXRController } from './WebXRController.js';
+import { WebXRDepthSensing } from './WebXRDepthSensing.js';
+import { WebGLRenderTarget } from "../WebGLRenderTarget";
+import {
+	DepthFormat,
+	DepthStencilFormat,
+	RGBAFormat,
+	UnsignedByteType,
+	UnsignedInt248Type,
+	UnsignedIntType
+} from "../../constants";
+import { DepthTexture } from "../../textures/DepthTexture";
+import { Vector2 } from "../../math/Vector2";
 
 function WebXRManager( renderer, gl ) {
 
@@ -17,10 +29,28 @@ function WebXRManager( renderer, gl ) {
 	let referenceSpace = null;
 	let referenceSpaceType = 'local-floor';
 
+	// Set default foveation to maximum.
+	let foveation = 1.0;
+	let customReferenceSpace = null;
+
 	let pose = null;
+	let glBinding = null;
+	let glProjLayer = null;
+	let glBaseLayer = null;
+	let xrFrame = null;
+
+	const depthSensing = new WebXRDepthSensing();
+	const attributes = gl.getContextAttributes();
+
+	let initialRenderTarget = null;
+	let newRenderTarget = null;
 
 	const controllers = [];
+	const controllerInputSources = [];
 	const inputSourcesMap = new Map();
+
+	const currentSize = new Vector2();
+	let currentPixelRatio = null;
 
 	//
 
@@ -47,6 +77,14 @@ function WebXRManager( renderer, gl ) {
 
 	this.isPresenting = false;
 
+	/**
+	 * Returns a group representing the `target ray` space of the XR controller.
+	 * Use this space for visualizing 3D objects that support the user in pointing
+	 * tasks like UI interaction.
+	 *
+	 * @param {number} index - The index of the controller.
+	 * @return {Group} A group representing the `target ray` space.
+	 */
 	this.getController = function ( index ) {
 
 		let controller = controllers[ index ];
@@ -62,6 +100,21 @@ function WebXRManager( renderer, gl ) {
 
 	};
 
+	/**
+	 * Returns a group representing the `grip` space of the XR controller.
+	 * Use this space for visualizing 3D objects that support the user in pointing
+	 * tasks like UI interaction.
+	 *
+	 * Note: If you want to show something in the user's hand AND offer a
+	 * pointing ray at the same time, you'll want to attached the handheld object
+	 * to the group returned by `getControllerGrip()` and the ray to the
+	 * group returned by `getController()`. The idea is to have two
+	 * different groups in two different coordinate spaces for the same WebXR
+	 * controller.
+	 *
+	 * @param {number} index - The index of the controller.
+	 * @return {Group} A group representing the `grip` space.
+	 */
 	this.getControllerGrip = function ( index ) {
 
 		let controller = controllers[ index ];
@@ -96,10 +149,20 @@ function WebXRManager( renderer, gl ) {
 
 	function onSessionEvent( event ) {
 
-		const controller = inputSourcesMap.get( event.inputSource );
+		// const controller = inputSourcesMap.get( event.inputSource );
+		const controllerIndex = controllerInputSources.indexOf( event.inputSource );
 
-		if ( controller ) {
+		if ( controllerIndex === - 1 ) {
 
+			return;
+
+		}
+
+		const controller = controllers[ controllerIndex ];
+
+		if ( controller !== undefined ) {
+
+			controller.update( event.inputSource, event.frame, customReferenceSpace || referenceSpace );
 			controller.dispatchEvent( { type: event.type, data: event.inputSource } );
 
 		}
@@ -177,11 +240,13 @@ function WebXRManager( renderer, gl ) {
 
 	};
 
-	this.setSession = function ( value ) {
+	this.setSession = async function ( value ) {
 
 		session = value;
 
 		if ( session !== null ) {
+
+			initialRenderTarget = renderer.getRenderTarget();
 
 			session.addEventListener( 'select', onSessionEvent );
 			session.addEventListener( 'selectstart', onSessionEvent );
@@ -190,14 +255,16 @@ function WebXRManager( renderer, gl ) {
 			session.addEventListener( 'squeezestart', onSessionEvent );
 			session.addEventListener( 'squeezeend', onSessionEvent );
 			session.addEventListener( 'end', onSessionEnd );
-
-			const attributes = gl.getContextAttributes();
+			session.addEventListener( 'inputsourceschange', onInputSourcesChange );
 
 			if ( attributes.xrCompatible !== true ) {
 
-				gl.makeXRCompatible();
+				await gl.makeXRCompatible();
 
 			}
+
+			currentPixelRatio = renderer.getPixelRatio();
+			renderer.getSize( currentSize );
 
 			const layerInit = {
 				antialias: attributes.antialias,
@@ -207,10 +274,31 @@ function WebXRManager( renderer, gl ) {
 				framebufferScaleFactor: framebufferScaleFactor
 			};
 
-			// eslint-disable-next-line no-undef
-			const baseLayer = new XRWebGLLayer( session, gl, layerInit );
+			// // eslint-disable-next-line no-undef
+			// const baseLayer = new XRWebGLLayer( session, gl, layerInit );
+			//
+			// session.updateRenderState( { baseLayer: baseLayer } );
 
-			session.updateRenderState( { baseLayer: baseLayer } );
+			glBaseLayer = new XRWebGLLayer( session, gl, layerInit );
+
+			session.updateRenderState( { baseLayer: glBaseLayer } );
+
+			renderer.setPixelRatio( 1 );
+			renderer.setSize( glBaseLayer.framebufferWidth, glBaseLayer.framebufferHeight, false );
+
+			newRenderTarget = new WebGLRenderTarget(
+				glBaseLayer.framebufferWidth,
+				glBaseLayer.framebufferHeight,
+				{
+					format: RGBAFormat,
+					type: UnsignedByteType,
+					colorSpace: renderer.outputColorSpace,
+					stencilBuffer: attributes.stencil,
+					resolveDepthBuffer: ( glBaseLayer.ignoreDepthValues === false ),
+					resolveStencilBuffer: ( glBaseLayer.ignoreDepthValues === false )
+
+				}
+			);
 
 			session.requestReferenceSpace( referenceSpaceType ).then( onRequestReferenceSpace );
 
@@ -402,6 +490,127 @@ function WebXRManager( renderer, gl ) {
 		return cameraVR;
 
 	};
+
+	/**
+	 * Returns the amount of foveation used by the XR compositor for the projection layer.
+	 *
+	 * @return {number} The amount of foveation.
+	 */
+	this.getFoveation = function () {
+
+		if ( glProjLayer === null && glBaseLayer === null ) {
+
+			return undefined;
+
+		}
+
+		return foveation;
+
+	};
+
+	/**
+	 * Sets the foveation value.
+	 *
+	 * @param {number} value - A number in the range `[0,1]` where `0` means no foveation (full resolution)
+	 * and `1` means maximum foveation (the edges render at lower resolution).
+	 */
+	this.setFoveation = function ( value ) {
+
+		// 0 = no foveation = full resolution
+		// 1 = maximum foveation = the edges render at lower resolution
+
+		foveation = value;
+
+		if ( glProjLayer !== null ) {
+
+			glProjLayer.fixedFoveation = value;
+
+		}
+
+		if ( glBaseLayer !== null && glBaseLayer.fixedFoveation !== undefined ) {
+
+			glBaseLayer.fixedFoveation = value;
+
+		}
+
+	};
+
+	/**
+	 * Returns the current depth texture computed via depth sensing.
+	 *
+	 * @return {?Texture} The depth texture.
+	 */
+	this.getDepthTexture = function () {
+
+		return depthSensing.getDepthTexture();
+
+	};
+
+	function onInputSourcesChange( event ) {
+
+		// Notify disconnected
+
+		for ( let i = 0; i < event.removed.length; i ++ ) {
+
+			const inputSource = event.removed[ i ];
+			const index = controllerInputSources.indexOf( inputSource );
+
+			if ( index >= 0 ) {
+
+				controllerInputSources[ index ] = null;
+				controllers[ index ].disconnect( inputSource );
+
+			}
+
+		}
+
+		// Notify connected
+
+		for ( let i = 0; i < event.added.length; i ++ ) {
+
+			const inputSource = event.added[ i ];
+
+			let controllerIndex = controllerInputSources.indexOf( inputSource );
+
+			if ( controllerIndex === - 1 ) {
+
+				// Assign input source a controller that currently has no input source
+
+				for ( let i = 0; i < controllers.length; i ++ ) {
+
+					if ( i >= controllerInputSources.length ) {
+
+						controllerInputSources.push( inputSource );
+						controllerIndex = i;
+						break;
+
+					} else if ( controllerInputSources[ i ] === null ) {
+
+						controllerInputSources[ i ] = inputSource;
+						controllerIndex = i;
+						break;
+
+					}
+
+				}
+
+				// If all controllers do currently receive input we ignore new ones
+
+				if ( controllerIndex === - 1 ) break;
+
+			}
+
+			const controller = controllers[ controllerIndex ];
+
+			if ( controller ) {
+
+				controller.connect( inputSource );
+
+			}
+
+		}
+
+	}
 
 	// Animation Loop
 

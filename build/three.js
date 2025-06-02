@@ -18137,22 +18137,43 @@
 		this.getReferenceSpace = function () {
 			return referenceSpace;
 		};
+		/**
+		 * Returns the current XR session.
+		 *
+		 * @return {?XRSession} The XR session. Returns `null` when used outside a XR session.
+		 */
+
 
 		this.getSession = function () {
 			return session;
 		};
+		/**
+		 * After a XR session has been requested usually with one of the `*Button` modules, it
+		 * is injected into the renderer with this method. This method triggers the start of
+		 * the actual XR rendering.
+		 *
+		 * @async
+		 * @param {XRSession} value - The XR session to set.
+		 * @param {boolean} initWithLayers - Use WebXR Layers API (defaults to false)
+		 * @return {Promise} A Promise that resolves when the session has been set.
+		 */
+
 
 		this.setSession = /*#__PURE__*/function () {
-			var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(value) {
-				var layerInit;
+			var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(value, initWithLayers) {
+				var useLayers, layerInit;
 				return regeneratorRuntime.wrap(function _callee$(_context) {
 					while (1) {
 						switch (_context.prev = _context.next) {
 							case 0:
+								if (initWithLayers === void 0) {
+									initWithLayers = false;
+								}
+
 								session = value;
 
 								if (!(session !== null)) {
-									_context.next = 24;
+									_context.next = 26;
 									break;
 								}
 
@@ -18167,16 +18188,18 @@
 								session.addEventListener('inputsourceschange', onInputSourcesChange);
 
 								if (!(attributes.xrCompatible !== true)) {
-									_context.next = 14;
+									_context.next = 15;
 									break;
 								}
 
-								_context.next = 14;
+								_context.next = 15;
 								return gl.makeXRCompatible();
 
-							case 14:
+							case 15:
 								currentPixelRatio = renderer.getPixelRatio();
 								renderer.getSize(currentSize);
+								useLayers = initWithLayers && typeof XRWebGLBinding !== 'undefined' && 'createProjectionLayer' in XRWebGLBinding.prototype; // if ( ! useLayers ) {
+
 								layerInit = {
 									antialias: attributes.antialias,
 									alpha: attributes.alpha,
@@ -18201,12 +18224,13 @@
 									stencilBuffer: attributes.stencil,
 									resolveDepthBuffer: glBaseLayer.ignoreDepthValues === false,
 									resolveStencilBuffer: glBaseLayer.ignoreDepthValues === false
-								});
+								}); // }
+
 								session.requestReferenceSpace(referenceSpaceType).then(onRequestReferenceSpace); //
 
 								session.addEventListener('inputsourceschange', updateInputSources);
 
-							case 24:
+							case 26:
 							case "end":
 								return _context.stop();
 						}
@@ -18214,7 +18238,7 @@
 				}, _callee);
 			}));
 
-			return function (_x) {
+			return function (_x, _x2) {
 				return _ref.apply(this, arguments);
 			};
 		}();

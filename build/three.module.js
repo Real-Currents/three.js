@@ -24008,13 +24008,28 @@ function WebXRManager( renderer, gl ) {
 
 	};
 
+	/**
+	 * Returns the current XR session.
+	 *
+	 * @return {?XRSession} The XR session. Returns `null` when used outside a XR session.
+	 */
 	this.getSession = function () {
 
 		return session;
 
 	};
 
-	this.setSession = async function ( value ) {
+	/**
+	 * After a XR session has been requested usually with one of the `*Button` modules, it
+	 * is injected into the renderer with this method. This method triggers the start of
+	 * the actual XR rendering.
+	 *
+	 * @async
+	 * @param {XRSession} value - The XR session to set.
+	 * @param {boolean} initWithLayers - Use WebXR Layers API (defaults to false)
+	 * @return {Promise} A Promise that resolves when the session has been set.
+	 */
+	this.setSession = async function ( value, initWithLayers = false ) {
 
 		session = value;
 
@@ -24040,39 +24055,46 @@ function WebXRManager( renderer, gl ) {
 			currentPixelRatio = renderer.getPixelRatio();
 			renderer.getSize( currentSize );
 
-			const layerInit = {
-				antialias: attributes.antialias,
-				alpha: attributes.alpha,
-				depth: attributes.depth,
-				stencil: attributes.stencil,
-				framebufferScaleFactor: framebufferScaleFactor
-			};
-
-			// // eslint-disable-next-line no-undef
-			// const baseLayer = new XRWebGLLayer( session, gl, layerInit );
-			//
-			// session.updateRenderState( { baseLayer: baseLayer } );
-
-			glBaseLayer = new XRWebGLLayer( session, gl, layerInit );
-
-			session.updateRenderState( { baseLayer: glBaseLayer } );
-
-			renderer.setPixelRatio( 1 );
-			renderer.setSize( glBaseLayer.framebufferWidth, glBaseLayer.framebufferHeight, false );
-
-			newRenderTarget = new WebGLRenderTarget(
-				glBaseLayer.framebufferWidth,
-				glBaseLayer.framebufferHeight,
-				{
-					format: RGBAFormat,
-					type: UnsignedByteType,
-					colorSpace: renderer.outputColorSpace,
-					stencilBuffer: attributes.stencil,
-					resolveDepthBuffer: ( glBaseLayer.ignoreDepthValues === false ),
-					resolveStencilBuffer: ( glBaseLayer.ignoreDepthValues === false )
-
-				}
+			const useLayers =  !!initWithLayers && (
+				typeof XRWebGLBinding !== 'undefined'
+				&& 'createProjectionLayer' in XRWebGLBinding.prototype
 			);
+
+			// if ( ! useLayers ) {
+				const layerInit = {
+					antialias: attributes.antialias,
+					alpha: attributes.alpha,
+					depth: attributes.depth,
+					stencil: attributes.stencil,
+					framebufferScaleFactor: framebufferScaleFactor
+				};
+
+				// // eslint-disable-next-line no-undef
+				// const baseLayer = new XRWebGLLayer( session, gl, layerInit );
+				//
+				// session.updateRenderState( { baseLayer: baseLayer } );
+
+				glBaseLayer = new XRWebGLLayer(session, gl, layerInit);
+
+				session.updateRenderState({baseLayer: glBaseLayer});
+
+				renderer.setPixelRatio(1);
+				renderer.setSize(glBaseLayer.framebufferWidth, glBaseLayer.framebufferHeight, false);
+
+				newRenderTarget = new WebGLRenderTarget(
+					glBaseLayer.framebufferWidth,
+					glBaseLayer.framebufferHeight,
+					{
+						format: RGBAFormat,
+						type: UnsignedByteType,
+						colorSpace: renderer.outputColorSpace,
+						stencilBuffer: attributes.stencil,
+						resolveDepthBuffer: (glBaseLayer.ignoreDepthValues === false),
+						resolveStencilBuffer: (glBaseLayer.ignoreDepthValues === false)
+
+					}
+				);
+			// }
 
 			session.requestReferenceSpace( referenceSpaceType ).then( onRequestReferenceSpace );
 

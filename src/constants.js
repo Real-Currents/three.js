@@ -198,3 +198,45 @@ export const StreamCopyUsage = 35042;
 
 export const GLSL1 = "100";
 export const GLSL3 = "300 es";
+
+// Color space string identifiers, matching CSS Color Module Level 4 and WebGPU names where available.
+
+/**
+ * No color space.
+ *
+ * @type {string}
+ * @constant
+ */
+export const NoColorSpace = '';
+
+/**
+ * sRGB color space.
+ *
+ * @type {string}
+ * @constant
+ */
+export const SRGBColorSpace = 'srgb';
+
+/**
+ * sRGB-linear color space.
+ *
+ * @type {string}
+ * @constant
+ */
+export const LinearSRGBColorSpace = 'srgb-linear';
+
+/**
+ * Linear transfer function.
+ *
+ * @type {string}
+ * @constant
+ */
+export const LinearTransfer = 'linear';
+
+/**
+ * sRGB transfer function.
+ *
+ * @type {string}
+ * @constant
+ */
+export const SRGBTransfer = 'srgb';

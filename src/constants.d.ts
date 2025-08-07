@@ -369,3 +369,36 @@ export const StreamCopyUsage: Usage;
 export enum GLSLVersion {}
 export const GLSL1: GLSLVersion;
 export const GLSL3: GLSLVersion;
+
+// Color space string identifiers
+
+// Color spaces
+export type ColorSpace = string;
+
+/**
+ * No color space.
+ */
+export const NoColorSpace: ColorSpace;
+
+/**
+ * sRGB color space.
+ */
+export const SRGBColorSpace: ColorSpace;
+
+/**
+ * sRGB-linear color space.
+ */
+export const LinearSRGBColorSpace: ColorSpace;
+
+// Transfer functions
+export type TransferFunction = string;
+
+/**
+ * Linear transfer function.
+ */
+export const LinearTransfer: TransferFunction;
+
+/**
+ * sRGB transfer function.
+ */
+export const SRGBTransfer: TransferFunction;

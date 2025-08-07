@@ -268,7 +268,48 @@
 	var DynamicCopyUsage = 35050;
 	var StreamCopyUsage = 35042;
 	var GLSL1 = "100";
-	var GLSL3 = "300 es";
+	var GLSL3 = "300 es"; // Color space string identifiers, matching CSS Color Module Level 4 and WebGPU names where available.
+
+	/**
+	 * No color space.
+	 *
+	 * @type {string}
+	 * @constant
+	 */
+
+	var NoColorSpace = '';
+	/**
+	 * sRGB color space.
+	 *
+	 * @type {string}
+	 * @constant
+	 */
+
+	var SRGBColorSpace = 'srgb';
+	/**
+	 * sRGB-linear color space.
+	 *
+	 * @type {string}
+	 * @constant
+	 */
+
+	var LinearSRGBColorSpace = 'srgb-linear';
+	/**
+	 * Linear transfer function.
+	 *
+	 * @type {string}
+	 * @constant
+	 */
+
+	var LinearTransfer = 'linear';
+	/**
+	 * sRGB transfer function.
+	 *
+	 * @type {string}
+	 * @constant
+	 */
+
+	var SRGBTransfer = 'srgb';
 
 	/**
 	 * https://github.com/mrdoob/eventdispatcher.js/
@@ -18198,7 +18239,7 @@
 							case 15:
 								currentPixelRatio = renderer.getPixelRatio();
 								renderer.getSize(currentSize);
-								useLayers = initWithLayers && typeof XRWebGLBinding !== 'undefined' && 'createProjectionLayer' in XRWebGLBinding.prototype; // if ( ! useLayers ) {
+								useLayers = !!initWithLayers && typeof XRWebGLBinding !== 'undefined' && 'createProjectionLayer' in XRWebGLBinding.prototype; // if ( ! useLayers ) {
 
 								layerInit = {
 									antialias: attributes.antialias,
@@ -38485,7 +38526,9 @@
 	exports.LinearMipMapNearestFilter = LinearMipMapNearestFilter;
 	exports.LinearMipmapLinearFilter = LinearMipmapLinearFilter;
 	exports.LinearMipmapNearestFilter = LinearMipmapNearestFilter;
+	exports.LinearSRGBColorSpace = LinearSRGBColorSpace;
 	exports.LinearToneMapping = LinearToneMapping;
+	exports.LinearTransfer = LinearTransfer;
 	exports.Loader = Loader;
 	exports.LoaderUtils = LoaderUtils;
 	exports.LoadingManager = LoadingManager;
@@ -38529,6 +38572,7 @@
 	exports.NeverDepth = NeverDepth;
 	exports.NeverStencilFunc = NeverStencilFunc;
 	exports.NoBlending = NoBlending;
+	exports.NoColorSpace = NoColorSpace;
 	exports.NoColors = NoColors;
 	exports.NoToneMapping = NoToneMapping;
 	exports.NormalAnimationBlendMode = NormalAnimationBlendMode;
@@ -38644,6 +38688,8 @@
 	exports.SRGB8_ALPHA8_ASTC_8x5_Format = SRGB8_ALPHA8_ASTC_8x5_Format;
 	exports.SRGB8_ALPHA8_ASTC_8x6_Format = SRGB8_ALPHA8_ASTC_8x6_Format;
 	exports.SRGB8_ALPHA8_ASTC_8x8_Format = SRGB8_ALPHA8_ASTC_8x8_Format;
+	exports.SRGBColorSpace = SRGBColorSpace;
+	exports.SRGBTransfer = SRGBTransfer;
 	exports.Scene = Scene;
 	exports.SceneUtils = SceneUtils;
 	exports.ShaderChunk = ShaderChunk;

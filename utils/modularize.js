@@ -48,6 +48,7 @@ var files = [
 	{ path: 'geometries/ParametricGeometries.js', dependencies: [], ignoreList: [] },
 	{ path: 'geometries/TeapotBufferGeometry.js', dependencies: [], ignoreList: [] },
 
+	{ path: 'interactive/HTMLMesh.js', dependencies: [], ignoreList: [] },
 	{ path: 'interactive/SelectionBox.js', dependencies: [], ignoreList: [] },
 	{ path: 'interactive/SelectionHelper.js', dependencies: [], ignoreList: [] },
 
